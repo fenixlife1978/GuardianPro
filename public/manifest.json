@@ -1,0 +1,9 @@
+{
+  "name": "EFAS EduGuard Pro",
+  "short_name": "EduGuard",
+  "description": "Sistema de monitoreo infantil y escolar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0F4FF",
+  "theme_color": "#1A237E"
+}
