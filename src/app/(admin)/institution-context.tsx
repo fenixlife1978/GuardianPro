@@ -30,32 +30,36 @@ export const InstitutionProvider = ({ children }: { children: ReactNode }) => {
       setError(null);
       const idFromParams = searchParams.get('institutionId');
 
+      // Case 1: Super admin or anyone is navigating with a specific institutionId in the URL.
+      // This is the primary way to identify the institution.
       if (idFromParams) {
-        // Case 1: Super admin is navigating with a specific institutionId
         setInstitutionId(idFromParams);
         setLoading(false);
-        return;
+        return; // Exit successfully.
       }
 
+      // If we reach here, it means no institutionId was in the URL.
+      // Now, we handle other cases.
       if (user && firestore) {
-        // A super admin might access /dashboard directly, they have no assigned institution.
+        // Case 2: The Super Admin is accessing /dashboard directly *without* an institutionId param.
+        // This is an error because the super admin must always specify which institution to manage.
         if (user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13') {
              setError('No se ha especificado una institución.');
-             setLoading(false);
-             return;
-        }
-
-        try {
-          const userDocRef = doc(firestore, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists() && userDocSnap.data().institutionId) {
-            setInstitutionId(userDocSnap.data().institutionId);
-          } else {
-            setError('Tu cuenta de administrador no está asociada a ninguna institución.');
-          }
-        } catch (e) {
-          console.error("Error fetching user's institution:", e);
-          setError('No se pudo verificar la información de tu institución.');
+        } else {
+            // Case 3: A regular admin user is accessing /dashboard directly.
+            // We need to fetch their assigned institutionId from their user profile.
+            try {
+              const userDocRef = doc(firestore, 'users', user.uid);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists() && userDocSnap.data().institutionId) {
+                setInstitutionId(userDocSnap.data().institutionId);
+              } else {
+                setError('Tu cuenta de administrador no está asociada a ninguna institución.');
+              }
+            } catch (e) {
+              console.error("Error fetching user's institution:", e);
+              setError('No se pudo verificar la información de tu institución.');
+            }
         }
       }
       setLoading(false);
