@@ -24,7 +24,7 @@ import { AdminUserNav } from '@/components/common/admin-user-nav';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Logo } from '../common/logo';
+import { Logo } from '@/components/common/logo';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
