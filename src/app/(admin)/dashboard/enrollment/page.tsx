@@ -13,8 +13,7 @@ import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase
 import { collection, doc } from 'firebase/firestore';
 import { EnrollmentModal } from '@/components/admin/enrollment-modal';
 import type { PendingEnrollment, Classroom } from '@/lib/firestore-types';
-
-const INSTITUTION_ID = 'colegio-san-patricio'; // Hardcoded for demo
+import { useInstitution } from '../../institution-context';
 
 export default function EnrollmentPage() {
     const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null);
@@ -23,12 +22,13 @@ export default function EnrollmentPage() {
     
     const firestore = useFirestore();
     const { toast } = useToast();
+    const { institutionId } = useInstitution();
 
     // Fetch classrooms
     const classroomsRef = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'institutions', INSTITUTION_ID, 'Aulas');
-    }, [firestore]);
+        if (!firestore || !institutionId) return null;
+        return collection(firestore, 'institutions', institutionId, 'Aulas');
+    }, [firestore, institutionId]);
     const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsRef);
 
     // Listen for pending enrollment
@@ -65,13 +65,13 @@ export default function EnrollmentPage() {
     };
     
     const qrValue = useMemo(() => {
-        if (!enrollmentId || !selectedClassroom) return null;
+        if (!enrollmentId || !selectedClassroom || !institutionId) return null;
         return JSON.stringify({
             enrollmentId: enrollmentId,
             classroomId: selectedClassroom,
-            institutionId: INSTITUTION_ID,
+            institutionId: institutionId,
         });
-    }, [enrollmentId, selectedClassroom]);
+    }, [enrollmentId, selectedClassroom, institutionId]);
 
     const handleEnrollmentConfirmed = () => {
         setIsModalOpen(false);
@@ -96,7 +96,7 @@ export default function EnrollmentPage() {
                 enrollmentId={enrollmentId}
                 pendingEnrollment={pendingEnrollment}
                 onConfirmed={handleEnrollmentConfirmed}
-                institutionId={INSTITUTION_ID}
+                institutionId={institutionId!}
             />
 
             <div>

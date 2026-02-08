@@ -5,6 +5,7 @@ import {
   Home,
   QrCode,
   Settings,
+  Loader2,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -22,9 +23,10 @@ import Link from 'next/link';
 import { usePathname, redirect } from 'next/navigation';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
 import { useUser } from '@/firebase';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Logo } from '@/components/common/logo';
+import { InstitutionProvider } from './institution-context';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
@@ -137,7 +139,11 @@ export default function AdminLayout({
             <AdminUserNav/>
         </header>
         <main className="flex-1 p-4 md:p-8">
-            {children}
+            <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                <InstitutionProvider>
+                    {children}
+                </InstitutionProvider>
+            </Suspense>
         </main>
       </SidebarInset>
     </SidebarProvider>

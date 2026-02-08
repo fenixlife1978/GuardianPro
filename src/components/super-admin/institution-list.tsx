@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -88,8 +89,10 @@ export function InstitutionList() {
                 <p className="text-xs text-muted-foreground">Equipos</p>
                 <p className="font-bold text-card-foreground">0</p>
               </div>
-              <Button variant="secondary" size="sm">
-                GESTIONAR
+              <Button asChild variant="secondary" size="sm">
+                <Link href={`/dashboard?institutionId=${inst.id}`}>
+                  GESTIONAR
+                </Link>
               </Button>
             </div>
           </div>
