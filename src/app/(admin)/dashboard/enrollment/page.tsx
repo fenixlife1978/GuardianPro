@@ -9,11 +9,10 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import QRCode from 'react-qr-code';
-import { useFirestore, useDoc, useCollection } from '@/firebase';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { EnrollmentModal } from '@/components/admin/enrollment-modal';
 import type { PendingEnrollment, Classroom } from '@/lib/firestore-types';
-import { useMemoFirebase } from '@/hooks/use-memo-firebase';
 
 const INSTITUTION_ID = 'colegio-san-patricio'; // Hardcoded for demo
 

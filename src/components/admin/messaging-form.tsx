@@ -16,8 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useCollection, useFirestore, useUser } from '@/firebase';
-import { useMemoFirebase } from '@/hooks/use-memo-firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, serverTimestamp } from 'firebase/firestore';
 import type { Classroom, Device } from '@/lib/firestore-types';
