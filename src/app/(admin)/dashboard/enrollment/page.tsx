@@ -45,16 +45,7 @@ export default function EnrollmentPage() {
             // We can ignore it.
         };
 
-        scanner.render(onScanSuccess, onScanFailure)
-            .catch(err => {
-                console.error("QR Scanner render error:", err);
-                toast({
-                    variant: 'destructive',
-                    title: 'Error de Escáner',
-                    description: 'No se pudo iniciar el escáner. Revisa los permisos de la cámara.',
-                });
-                setIsScanning(false);
-            });
+        scanner.render(onScanSuccess, onScanFailure);
 
 
         return () => {
