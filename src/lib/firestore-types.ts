@@ -1,30 +1,35 @@
-// This file is for defining TypeScript types based on your Firestore data structure.
-// It's a good practice to keep these separate from your component files.
+import { Timestamp } from 'firebase/firestore';
 
 export interface Institution {
-    id: string;
-    name: string;
-    superAdminSuspended: boolean;
+  id: string;
+  name: string;
+  address?: string;
+  logoUrl?: string;
+  filterMode: 'Blacklist' | 'Whitelist';
+  superAdminSuspended: boolean;
 }
 
 export interface Classroom {
-    id: string;
-    institutionId: string;
-    name: string;
+  id: string;
+  institutionId: string;
+  name: string;
+  capacity?: number;
+  published: boolean;
 }
 
 export interface Device {
-    id: string;
-    studentName: string;
-    classroomId: string;
-    deviceInfo: {
-        macAddress: string;
-        model: string;
-    };
-    enrolledAt?: any; // Should be a server timestamp
-    institutionId: string;
+  id: string;
+  institutionId: string;
+  classroomId: string;
+  studentName: string;
+  model: string;
+  macAddress: string;
+  activityLogs?: {
+    url: string;
+    date: Timestamp;
+    duration: number;
+  }[];
 }
-
 
 export interface PendingEnrollment {
   id?: string;
@@ -33,15 +38,5 @@ export interface PendingEnrollment {
     macAddress: string;
     model: string;
   };
-  createdAt: any; // Should be a server timestamp
-}
-
-
-export interface Message {
-    id: string;
-    deviceId: string;
-    senderId: string;
-    messageText: string;
-    timestamp: any; // server timestamp
-    readConfirmation: boolean;
+  createdAt: Timestamp; // Should be a server timestamp
 }

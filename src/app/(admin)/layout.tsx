@@ -3,7 +3,6 @@
 import {
   BarChart2,
   Home,
-  MessageSquare,
   QrCode,
   Settings,
   ShieldCheck,
@@ -48,14 +47,6 @@ const AdminSidebar = () => {
                             <Link href="/dashboard/reports">
                                 <BarChart2 />
                                 <span>Reportes</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={isActive('/dashboard/messaging')} tooltip="Mensajería">
-                            <Link href="/dashboard/messaging">
-                                <MessageSquare />
-                                <span>Mensajería</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
