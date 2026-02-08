@@ -16,43 +16,45 @@ export default function EnrollmentPage() {
     const { toast } = useToast();
 
     useEffect(() => {
-        if (!isScanning) {
-            return;
+        let scanner: Html5QrcodeScanner | null = null;
+
+        if (isScanning) {
+            scanner = new Html5QrcodeScanner(
+                QR_READER_ID,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    rememberLastUsedCamera: true,
+                    supportedScanTypes: [0] // 0 for SCAN_TYPE_CAMERA
+                },
+                false // verbose
+            );
+
+            const onScanSuccess = (decodedText: string, decodedResult: any) => {
+                // The library stops scanning automatically on success.
+                setIsScanning(false);
+                setScanResult(decodedText);
+                toast({
+                    title: "Código QR Escaneado",
+                    description: `Dispositivo listo para enrolar.`,
+                });
+            };
+
+            const onScanFailure = (error: any) => {
+                // This is called on every frame that doesn't contain a QR code.
+                // We can ignore it.
+            };
+
+            scanner.render(onScanSuccess, onScanFailure);
         }
 
-        const scanner = new Html5QrcodeScanner(
-            QR_READER_ID,
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                rememberLastUsedCamera: true,
-                supportedScanTypes: [0] // 0 for SCAN_TYPE_CAMERA
-            },
-            false // verbose
-        );
-
-        const onScanSuccess = (decodedText: string, decodedResult: any) => {
-            setIsScanning(false);
-            setScanResult(decodedText);
-            toast({
-                title: "Código QR Escaneado",
-                description: `Dispositivo listo para enrolar.`,
-            });
-        };
-
-        const onScanFailure = (error: any) => {
-            // This is called on every frame that doesn't contain a QR code.
-            // We can ignore it.
-        };
-
-        scanner.render(onScanSuccess, onScanFailure);
-
-
         return () => {
-            // The scanner is not always initialized when the component unmounts
-            if (scanner?.getState() === 2) { // 2 is SCANNING
-                scanner.clear().catch(error => {
-                    console.error("Failed to clear html5-qrcode-scanner.", error);
+            // When the component unmounts or `isScanning` changes, we clean up.
+            // It's possible the scanner is already stopped (e.g., after a successful scan).
+            // Trying to clear it again would throw an error, which we can safely ignore.
+            if (scanner) {
+                scanner.clear().catch(() => {
+                    // Ignore any errors during cleanup.
                 });
             }
         };
