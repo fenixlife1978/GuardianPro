@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,22 +15,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/common/logo';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) return;
 
@@ -38,34 +37,23 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+      await createUserWithEmailAndPassword(auth, email, password);
       
       toast({
-        title: 'Inicio de Sesión Exitoso',
-        description: 'Redirigiendo a tu panel...',
+        title: 'Cuenta Creada',
+        description: 'Ahora serás redirigido al panel.',
       });
       
-      const isSuperAdmin = idTokenResult.claims.isSuperAdmin === true;
-
-      const redirectUrl = searchParams.get('redirect');
-
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else if (isSuperAdmin) {
-        router.push('/super-admin');
-      } else {
-        router.push('/dashboard');
-      }
+      router.push('/dashboard');
 
     } catch (err: any) {
       console.error(err);
       const errorCode = err.code;
       let friendlyMessage = 'Ocurrió un error inesperado.';
-      if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
-        friendlyMessage = 'El email o la contraseña son incorrectos.';
+      if (errorCode === 'auth/email-already-in-use') {
+        friendlyMessage = 'Este email ya está en uso.';
+      } else if (errorCode === 'auth/weak-password') {
+        friendlyMessage = 'La contraseña debe tener al menos 6 caracteres.';
       } else if (errorCode === 'auth/invalid-email') {
         friendlyMessage = 'El formato del email no es válido.';
       }
@@ -82,13 +70,13 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <Logo />
           </div>
-          <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
+          <CardTitle className="text-2xl">Crear una cuenta</CardTitle>
           <CardDescription>
-            Ingresa tus credenciales para acceder al panel.
+            Ingresa tus datos para registrarte.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4" onSubmit={handleLogin}>
+          <form className="grid gap-4" onSubmit={handleSignUp}>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -102,15 +90,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Contraseña</Label>
-                <Link
-                  href="#"
-                  className="ml-auto inline-block text-sm underline"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
+              <Label htmlFor="password">Contraseña</Label>
               <Input 
                 id="password" 
                 type="password" 
@@ -124,21 +104,21 @@ export default function LoginPage() {
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error de Autenticación</AlertTitle>
+                    <AlertTitle>Error de Registro</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Accediendo..." : "Acceder"}
+                {loading ? "Creando cuenta..." : "Crear cuenta"}
             </Button>
+            <div className="mt-4 text-center text-sm">
+              ¿Ya tienes una cuenta?{' '}
+              <Link href="/login" className="underline">
+                Iniciar sesión
+              </Link>
+            </div>
           </form>
-          <div className="mt-4 text-center text-sm">
-            ¿No tienes una cuenta?{' '}
-            <Link href="/signup" className="underline">
-              Crear una cuenta
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
