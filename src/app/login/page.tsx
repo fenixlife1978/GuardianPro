@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/common/logo';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, User } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -30,36 +30,35 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent, targetUser: 'admin' | 'super-admin') => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) return;
 
     setLoading(true);
     setError(null);
 
-    // Hardcoded check for demo purposes
-    if (targetUser === 'admin' && email !== 'admin@colegio.com') {
-        if(email !== 'vallecondo@gmail.com') {
-            setError('Para acceder como Admin, usa el email: admin@colegio.com');
-            setLoading(false);
-            return;
-        }
-    } else if (targetUser === 'super-admin' && email !== 'vallecondo@gmail.com') {
-        setError('Para acceder como Super Admin, usa el email: vallecondo@gmail.com');
-        setLoading(false);
-        return;
-    }
-
-
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+      
       toast({
         title: 'Inicio de Sesión Exitoso',
         description: 'Redirigiendo a tu panel...',
       });
       
-      const redirectUrl = searchParams.get('redirect') || (targetUser === 'super-admin' ? '/super-admin' : '/dashboard');
-      router.push(redirectUrl);
+      const isSuperAdmin = idTokenResult.claims.isSuperAdmin === true;
+
+      const redirectUrl = searchParams.get('redirect');
+
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else if (isSuperAdmin) {
+        router.push('/super-admin');
+      } else {
+        router.push('/dashboard');
+      }
 
     } catch (err: any) {
       console.error(err);
@@ -71,7 +70,8 @@ export default function LoginPage() {
         friendlyMessage = 'El formato del email no es válido.';
       }
       setError(friendlyMessage);
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -88,7 +88,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4">
+          <form className="grid gap-4" onSubmit={handleLogin}>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -129,14 +129,9 @@ export default function LoginPage() {
                 </Alert>
             )}
 
-            <div className="flex flex-col gap-2">
-                <Button type="submit" className="w-full" onClick={(e) => handleLogin(e, 'super-admin')} disabled={loading}>
-                    {loading ? "Accediendo..." : "Acceder como Super Admin"}
-                </Button>
-                <Button variant="outline" className="w-full" onClick={(e) => handleLogin(e, 'admin')} disabled={loading}>
-                    {loading ? "Accediendo..." : "Acceder como Admin"}
-                </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Accediendo..." : "Acceder"}
+            </Button>
           </form>
         </CardContent>
       </Card>

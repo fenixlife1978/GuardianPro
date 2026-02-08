@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Server } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { confirmEnrollment, type PendingEnrollment } from '@/lib/firestore';
+import { confirmEnrollment } from '@/lib/firestore';
+import type { PendingEnrollment } from '@/lib/firestore-types';
 import { useFirestore } from '@/firebase';
 
 interface EnrollmentModalProps {
@@ -24,6 +25,7 @@ interface EnrollmentModalProps {
   enrollmentId: string | null;
   pendingEnrollment: PendingEnrollment | null;
   onConfirmed: () => void;
+  institutionId: string;
 }
 
 type Inputs = {
@@ -36,6 +38,7 @@ export function EnrollmentModal({
   enrollmentId,
   pendingEnrollment,
   onConfirmed,
+  institutionId,
 }: EnrollmentModalProps) {
   const { register, handleSubmit, formState: { errors }, reset } = useForm<Inputs>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,11 +55,12 @@ export function EnrollmentModal({
     setError(null);
 
     try {
-      await confirmEnrollment(firestore, {
+      await confirmEnrollment({
+        firestore,
         enrollmentId,
         pendingData: pendingEnrollment,
         studentName: data.studentName,
-        institutionId: 'colegio-san-patricio' // Hardcoded for demo
+        institutionId: institutionId
       });
       onConfirmed();
       reset();

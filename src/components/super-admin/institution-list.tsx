@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Building, MoreVertical } from 'lucide-react';
+import { Building, MoreVertical, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -13,36 +12,74 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { useMemoFirebase } from '@/hooks/use-memo-firebase';
+import { Skeleton } from '../ui/skeleton';
+import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import type { Institution } from '@/lib/firestore-types';
 
-type Institution = {
-  id: string;
-  name: string;
-  classrooms: number;
-  devices: number;
-  suspended: boolean;
-};
 
-const mockInstitutions: Institution[] = [
-  { id: 'inst_1', name: 'Colegio San Patricio', classrooms: 15, devices: 350, suspended: false },
-  { id: 'inst_2', name: 'Liceo Francés', classrooms: 22, devices: 512, suspended: false },
-  { id: 'inst_3', name: 'Escuela Americana', classrooms: 30, devices: 700, suspended: true },
-  { id: 'inst_4', name: 'Instituto Cervantes', classrooms: 10, devices: 200, suspended: false },
-];
+const InstitutionCardSkeleton = () => (
+    <Card className="flex flex-col">
+        <CardHeader>
+             <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                     <Skeleton className="h-12 w-12 rounded-lg" />
+                     <div className='space-y-2'>
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-16" />
+                     </div>
+                </div>
+                 <Skeleton className="h-8 w-8" />
+            </div>
+        </CardHeader>
+        <CardContent className="flex-grow space-y-4">
+            <div className="flex justify-between">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-8" />
+            </div>
+            <div className="flex justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-8" />
+            </div>
+        </CardContent>
+        <div className="p-6 pt-0 mt-auto">
+            <Skeleton className="h-10 w-full" />
+        </div>
+    </Card>
+)
+
 
 export function InstitutionList() {
-  const [institutions, setInstitutions] = useState<Institution[]>(mockInstitutions);
+  const firestore = useFirestore();
 
-  const toggleSuspended = (id: string) => {
-    setInstitutions((prev) =>
-      prev.map((inst) =>
-        inst.id === id ? { ...inst, suspended: !inst.suspended } : inst
-      )
-    );
+  const institutionsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'institutions');
+  }, [firestore]);
+
+  const { data: institutions, isLoading } = useCollection<Institution>(institutionsRef);
+
+  const toggleSuspended = (id: string, currentStatus: boolean) => {
+    if (!firestore) return;
+    const docRef = doc(firestore, 'institutions', id);
+    updateDocumentNonBlocking(docRef, { superAdminSuspended: !currentStatus });
   };
+  
+  if (isLoading) {
+      return (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <InstitutionCardSkeleton />
+              <InstitutionCardSkeleton />
+              <InstitutionCardSkeleton />
+          </div>
+      )
+  }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {institutions.map((inst) => (
+      {institutions?.map((inst) => (
         <Card key={inst.id} className="flex flex-col">
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -52,8 +89,8 @@ export function InstitutionList() {
                 </div>
                 <div>
                   <CardTitle className="text-lg font-semibold">{inst.name}</CardTitle>
-                  <Badge variant={inst.suspended ? 'destructive' : 'secondary'} className="mt-1">
-                    {inst.suspended ? 'Suspendida' : 'Activa'}
+                  <Badge variant={inst.superAdminSuspended ? 'destructive' : 'secondary'} className="mt-1">
+                    {inst.superAdminSuspended ? 'Suspendida' : 'Activa'}
                   </Badge>
                 </div>
               </div>
@@ -71,21 +108,14 @@ export function InstitutionList() {
             </div>
           </CardHeader>
           <CardContent className="flex-grow space-y-4">
-             <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Aulas</span>
-                <span className="font-medium text-foreground">{inst.classrooms}</span>
-             </div>
-             <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Dispositivos</span>
-                <span className="font-medium text-foreground">{inst.devices}</span>
-             </div>
+             {/* Note: classroom and device counts require aggregation, removed for now */}
           </CardContent>
           <div className="p-6 pt-0 mt-auto">
             <div className="flex items-center space-x-2 p-3 rounded-md bg-secondary/50">
               <Switch
                 id={`suspend-${inst.id}`}
-                checked={inst.suspended}
-                onCheckedChange={() => toggleSuspended(inst.id)}
+                checked={inst.superAdminSuspended}
+                onCheckedChange={() => toggleSuspended(inst.id, inst.superAdminSuspended)}
                 aria-label={`Suspender ${inst.name}`}
               />
               <Label htmlFor={`suspend-${inst.id}`} className="font-medium cursor-pointer">

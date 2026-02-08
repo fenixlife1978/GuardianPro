@@ -75,6 +75,10 @@
         "published": {
           "type": "boolean",
           "description": "Indicates whether the device's restrictions are active."
+        },
+        "studentName": {
+            "type": "string",
+            "description": "The name of the student assigned to the device."
         }
       },
       "required": [
@@ -82,7 +86,8 @@
         "institutionId",
         "classroomId",
         "enrollmentToken",
-        "published"
+        "published",
+        "studentName"
       ]
     },
     "UsageReport": {

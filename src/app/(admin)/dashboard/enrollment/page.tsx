@@ -3,23 +3,19 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode, Loader2, CheckCircle } from "lucide-react";
+import { QrCode, Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import QRCode from 'react-qr-code';
-import { useFirestore, useDoc } from '@/firebase';
+import { useFirestore, useDoc, useCollection } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { EnrollmentModal } from '@/components/admin/enrollment-modal';
-import type { PendingEnrollment } from '@/lib/firestore';
+import type { PendingEnrollment, Classroom } from '@/lib/firestore-types';
 import { useMemoFirebase } from '@/hooks/use-memo-firebase';
 
-const mockClassrooms = [
-    { id: 'aula-3b', name: 'Aula 3B' },
-    { id: 'aula-4a', name: 'Aula 4A' },
-    { id: 'aula-5c', name: 'Aula 5C' },
-];
+const INSTITUTION_ID = 'colegio-san-patricio'; // Hardcoded for demo
 
 export default function EnrollmentPage() {
     const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null);
@@ -29,12 +25,20 @@ export default function EnrollmentPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
+    // Fetch classrooms
+    const classroomsRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'institutions', INSTITUTION_ID, 'classrooms');
+    }, [firestore]);
+    const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsRef);
+
+    // Listen for pending enrollment
     const enrollmentDocRef = useMemoFirebase(() => {
         if (!firestore || !enrollmentId) return null;
         return doc(firestore, 'pending_enrollments', enrollmentId);
     }, [firestore, enrollmentId]);
 
-    const { data: pendingEnrollment, loading } = useDoc<PendingEnrollment>(enrollmentDocRef);
+    const { data: pendingEnrollment } = useDoc<PendingEnrollment>(enrollmentDocRef);
 
     useEffect(() => {
         if (pendingEnrollment) {
@@ -66,6 +70,7 @@ export default function EnrollmentPage() {
         return JSON.stringify({
             enrollmentId: enrollmentId,
             classroomId: selectedClassroom,
+            institutionId: INSTITUTION_ID,
         });
     }, [enrollmentId, selectedClassroom]);
 
@@ -92,6 +97,7 @@ export default function EnrollmentPage() {
                 enrollmentId={enrollmentId}
                 pendingEnrollment={pendingEnrollment}
                 onConfirmed={handleEnrollmentConfirmed}
+                institutionId={INSTITUTION_ID}
             />
 
             <div>
@@ -111,19 +117,19 @@ export default function EnrollmentPage() {
                          <div className="space-y-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="classroom-select">Seleccionar Aula</Label>
-                                <Select onValueChange={setSelectedClassroom} value={selectedClassroom || ''}>
+                                <Select onValueChange={setSelectedClassroom} value={selectedClassroom || ''} disabled={classroomsLoading}>
                                     <SelectTrigger id="classroom-select">
-                                        <SelectValue placeholder="Selecciona un aula..." />
+                                        <SelectValue placeholder={classroomsLoading ? "Cargando aulas..." : "Selecciona un aula..."} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {mockClassrooms.map(c => (
+                                        {classrooms?.map(c => (
                                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button onClick={handleGenerateQR} disabled={!selectedClassroom} className="w-full">
-                                <QrCode className="mr-2 h-4 w-4" />
+                            <Button onClick={handleGenerateQR} disabled={!selectedClassroom || classroomsLoading} className="w-full">
+                                {classroomsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <QrCode className="mr-2 h-4 w-4" />}
                                 Generar Código QR
                             </Button>
                         </div>
