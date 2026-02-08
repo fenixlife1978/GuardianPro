@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/common/logo';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -31,6 +31,24 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { user, loading: userLoading } = useUser();
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!userLoading && user) {
+      const isSuperAdmin = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
+      const redirectUrl = searchParams.get('redirect');
+      
+      if (redirectUrl) {
+          router.push(redirectUrl);
+      } else if (isSuperAdmin) {
+        router.push('/super-admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, userLoading, router, searchParams]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +92,8 @@ export default function LoginPage() {
 
       const redirectUrl = searchParams.get('redirect');
 
+      // The useEffect will handle redirection, but we can push here for faster navigation
+      // after a direct login action. The useEffect handles the case where a user lands on the page already logged in.
       if (redirectUrl) {
         router.push(redirectUrl);
       } else if (isSuperAdmin) {
@@ -92,10 +112,19 @@ export default function LoginPage() {
         friendlyMessage = 'El formato del email no es válido.';
       }
       setError(friendlyMessage);
-    } finally {
-        setLoading(false);
-    }
+      setLoading(false); // Only set loading to false on error
+    } 
+    // No finally block, so loading state persists during redirection
   };
+  
+  // Show a loading spinner while checking for user auth state, or if a user is found and we are about to redirect.
+  if (userLoading || user) {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -166,5 +195,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
