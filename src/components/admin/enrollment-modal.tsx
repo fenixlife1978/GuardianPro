@@ -29,7 +29,7 @@ interface EnrollmentModalProps {
 }
 
 type Inputs = {
-  studentName: string;
+  nombre_alumno: string;
 };
 
 export function EnrollmentModal({
@@ -59,7 +59,7 @@ export function EnrollmentModal({
         firestore,
         enrollmentId,
         pendingData: pendingEnrollment,
-        studentName: data.studentName,
+        studentName: data.nombre_alumno,
         institutionId: institutionId
       });
       onConfirmed();
@@ -104,9 +104,9 @@ export function EnrollmentModal({
                     <Input
                         id="studentName"
                         placeholder="Ej: Juan Pérez"
-                        {...register('studentName', { required: 'El nombre del alumno es obligatorio.' })}
+                        {...register('nombre_alumno', { required: 'El nombre del alumno es obligatorio.' })}
                     />
-                    {errors.studentName && <p className="text-sm text-red-500">{errors.studentName.message}</p>}
+                    {errors.nombre_alumno && <p className="text-sm text-red-500">{errors.nombre_alumno.message}</p>}
                 </div>
             </form>
             {error && <p className="text-sm text-red-500">{error}</p>}

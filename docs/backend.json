@@ -6,11 +6,11 @@
       "type": "object",
       "description": "Represents an educational institution or tenant within the multi-tenant system.",
       "properties": {
-        "name": {
+        "nombre": {
           "type": "string",
           "description": "Name of the institution."
         },
-        "address": {
+        "direccion": {
           "type": "string",
           "description": "Physical address of the institution (optional)."
         },
@@ -19,7 +19,7 @@
           "format": "uri",
           "description": "URL of the institution's logo (optional)."
         },
-        "filterMode": {
+        "modoFiltro": {
           "type": "string",
           "enum": [
             "Blacklist",
@@ -33,8 +33,8 @@
         }
       },
       "required": [
-        "name",
-        "filterMode",
+        "nombre",
+        "modoFiltro",
         "superAdminSuspended"
       ]
     },
@@ -48,30 +48,30 @@
           "type": "string",
           "description": "Denormalized reference to Institution for security rules."
         },
-        "name": {
+        "nombre_aula": {
           "type": "string",
           "description": "Name of the classroom or sector."
         },
-        "capacity": {
+        "capacidad": {
           "type": "number",
           "description": "Student capacity of the classroom (optional)."
         },
-        "published": {
+        "isPublished": {
           "type": "boolean",
           "description": "Syncs with RTDB to activate/deactivate restrictions for the classroom."
         }
       },
       "required": [
         "institutionId",
-        "name",
-        "published"
+        "nombre_aula",
+        "isPublished"
       ]
     },
-    "Device": {
+    "Alumno": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Device",
+      "title": "Alumno",
       "type": "object",
-      "description": "Represents a student's device assigned to a classroom.",
+      "description": "Represents a student assigned to a classroom.",
       "properties": {
         "institutionId": {
           "type": "string",
@@ -81,11 +81,11 @@
           "type": "string",
           "description": "Denormalized reference to Classroom for security rules."
         },
-        "studentName": {
+        "nombre_alumno": {
           "type": "string",
           "description": "Name of the student assigned to the device."
         },
-        "model": {
+        "modelo": {
           "type": "string",
           "description": "The hardware model of the device."
         },
@@ -93,7 +93,7 @@
           "type": "string",
           "description": "The MAC address of the device."
         },
-        "activityLogs": {
+        "logs_actividad": {
           "type": "array",
           "description": "Logs of student's web activity.",
           "items": {
@@ -123,8 +123,8 @@
       "required": [
         "institutionId",
         "classroomId",
-        "studentName",
-        "model",
+        "nombre_alumno",
+        "modelo",
         "macAddress"
       ]
     },
@@ -181,7 +181,7 @@
         }
       },
       {
-        "path": "/institutions/{institutionId}/classrooms/{classroomId}",
+        "path": "/institutions/{institutionId}/Aulas/{classroomId}",
         "definition": {
           "schema": {
             "$ref": "#/backend/entities/Classroom"
@@ -190,10 +190,10 @@
         }
       },
       {
-        "path": "/institutions/{institutionId}/classrooms/{classroomId}/devices/{deviceId}",
+        "path": "/institutions/{institutionId}/Aulas/{classroomId}/Alumnos/{deviceId}",
         "definition": {
           "schema": {
-            "$ref": "#/backend/entities/Device"
+            "$ref": "#/backend/entities/Alumno"
           },
           "description": "Subcollection for student devices within a classroom."
         }

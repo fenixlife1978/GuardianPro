@@ -2,29 +2,29 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface Institution {
   id: string;
-  name: string;
-  address?: string;
+  nombre: string;
+  direccion?: string;
   logoUrl?: string;
-  filterMode: 'Blacklist' | 'Whitelist';
+  modoFiltro: 'Blacklist' | 'Whitelist';
   superAdminSuspended: boolean;
 }
 
 export interface Classroom {
   id: string;
   institutionId: string;
-  name: string;
-  capacity?: number;
-  published: boolean;
+  nombre_aula: string;
+  capacidad?: number;
+  isPublished: boolean;
 }
 
-export interface Device {
+export interface Alumno {
   id: string;
   institutionId: string;
   classroomId: string;
-  studentName: string;
-  model: string;
+  nombre_alumno: string;
+  modelo: string;
   macAddress: string;
-  activityLogs?: {
+  logs_actividad?: {
     url: string;
     date: Timestamp;
     duration: number;

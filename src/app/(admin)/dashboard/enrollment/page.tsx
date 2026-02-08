@@ -27,7 +27,7 @@ export default function EnrollmentPage() {
     // Fetch classrooms
     const classroomsRef = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'institutions', INSTITUTION_ID, 'classrooms');
+        return collection(firestore, 'institutions', INSTITUTION_ID, 'Aulas');
     }, [firestore]);
     const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsRef);
 
@@ -122,7 +122,7 @@ export default function EnrollmentPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classrooms?.map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                            <SelectItem key={c.id} value={c.id}>{c.nombre_aula}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

@@ -5,7 +5,6 @@ import {
   Home,
   QrCode,
   Settings,
-  ShieldCheck,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -25,6 +24,7 @@ import { AdminUserNav } from '@/components/common/admin-user-nav';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Logo } from '../common/logo';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
@@ -34,10 +34,7 @@ const AdminSidebar = () => {
         <Sidebar>
             <SidebarHeader>
               <div className="flex items-center gap-2 p-2">
-                <ShieldCheck className="h-7 w-7 text-sidebar-primary" />
-                <h1 className="text-xl font-bold tracking-tight text-sidebar-foreground">
-                    EduGuard
-                </h1>
+                <Logo />
               </div>
             </SidebarHeader>
             <SidebarContent>

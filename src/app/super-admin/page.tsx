@@ -4,12 +4,12 @@ import { InstitutionList } from '@/components/super-admin/institution-list';
 import { Logo } from '@/components/common/logo';
 import { UserNav } from '@/components/common/user-nav';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { ArrowLeft, PlusCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { CreateInstitutionDialog } from '@/components/super-admin/create-institution-dialog';
 import { useState, useEffect } from 'react';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SuperAdminDashboard() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -27,8 +27,6 @@ export default function SuperAdminDashboard() {
     }
   }, [user, loading, router]);
 
-  // While loading, or if user is not the authorized super admin, show a spinner.
-  // This prevents flashing the content to unauthorized users.
   if (loading || !user || user.uid !== 'QeGMDNE4GaSJOU8XEnY3lFJ9by13') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -50,8 +48,8 @@ export default function SuperAdminDashboard() {
         <main className="container py-8">
           <div className="mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                  <h2 className="text-3xl font-bold tracking-tight">Panel de Super Administrador</h2>
-                  <p className="text-muted-foreground">Gestiona todas las instituciones en la plataforma.</p>
+                  <h1 className="text-3xl font-bold tracking-tight">Panel de Control Maestro</h1>
+                  <p className="text-muted-foreground">Gestión global de instituciones educativas</p>
               </div>
               <div className="flex gap-2">
                 <Button asChild variant="outline">
@@ -61,8 +59,8 @@ export default function SuperAdminDashboard() {
                     </Link>
                 </Button>
                 <Button onClick={() => setIsCreateOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Nueva Institución
+                    <Plus className="mr-2 h-4 w-4" />
+                    Añadir Institución
                 </Button>
               </div>
           </div>

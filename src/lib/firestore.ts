@@ -3,11 +3,10 @@ import {
   doc,
   writeBatch,
   Firestore,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import type { Device, PendingEnrollment } from './firestore-types';
+import type { Alumno, PendingEnrollment } from './firestore-types';
 
 interface ConfirmEnrollmentParams {
   firestore: Firestore;
@@ -33,19 +32,17 @@ export async function confirmEnrollment({
   const newDeviceRef = doc(
     firestore, 
     'institutions', institutionId, 
-    'classrooms', pendingData.classroomId, 
-    'devices', enrollmentId
+    'Aulas', pendingData.classroomId, 
+    'Alumnos', enrollmentId
   );
 
   // 3. Create the new device data object
-  const newDeviceData: Omit<Device, 'id'> = {
-    studentName: studentName,
+  const newDeviceData: Omit<Alumno, 'id'> = {
+    nombre_alumno: studentName,
     classroomId: pendingData.classroomId,
     institutionId: institutionId,
     macAddress: pendingData.deviceInfo.macAddress,
-    model: pendingData.deviceInfo.model,
-    // enrolledAt: serverTimestamp(), // This field is not in the new Device type
-    // any other fields
+    modelo: pendingData.deviceInfo.model,
   };
 
   // 4. Add operations to the batch
@@ -56,7 +53,7 @@ export async function confirmEnrollment({
   return batch.commit().catch(async (serverError) => {
     // If the batch fails, it's likely a permissions issue.
     const permissionError = new FirestorePermissionError({
-      path: `batch write (devices collection and pending_enrollments)`,
+      path: `batch write (Alumnos collection and pending_enrollments)`,
       operation: 'write',
       requestResourceData: { newDevice: newDeviceData, deletedId: enrollmentId },
     });

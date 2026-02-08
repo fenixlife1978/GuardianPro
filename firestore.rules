@@ -81,13 +81,13 @@ service cloud.firestore {
       allow get: if isInstitutionMemberOrSuperAdmin(institutionId);
       allow list, create, update, delete: if isSuperAdmin();
 
-      match /classrooms/{classroomId} {
+      match /Aulas/{classroomId} {
         allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId);
         allow create: if isInstitutionMemberOrSuperAdmin(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId);
         allow update: if isInstitutionMemberOrSuperAdmin(institutionId) && institutionIdIsImmutable();
         allow delete: if isInstitutionMemberOrSuperAdmin(institutionId);
 
-        match /devices/{deviceId} {
+        match /Alumnos/{deviceId} {
             allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId);
             allow create: if isInstitutionMemberOrSuperAdmin(institutionId) 
                             && hasCorrectInstitutionIdOnCreate(institutionId)

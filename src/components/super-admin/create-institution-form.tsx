@@ -31,10 +31,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-  address: z.string().optional(),
+  nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
+  direccion: z.string().optional(),
   logo: z.any().optional(),
-  filterMode: z.enum(['Blacklist', 'Whitelist']),
+  modoFiltro: z.enum(['Blacklist', 'Whitelist']),
 });
 
 interface CreateInstitutionFormProps {
@@ -49,9 +49,9 @@ export function CreateInstitutionForm({ onFinished }: CreateInstitutionFormProps
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      address: '',
-      filterMode: 'Blacklist',
+      nombre: '',
+      direccion: '',
+      modoFiltro: 'Blacklist',
     },
   });
 
@@ -86,14 +86,14 @@ export function CreateInstitutionForm({ onFinished }: CreateInstitutionFormProps
     try {
         const institutionsRef = collection(firestore, 'institutions');
         await addDocumentNonBlocking(institutionsRef, {
-            name: values.name,
-            address: values.address || '',
+            nombre: values.nombre,
+            direccion: values.direccion || '',
             logoUrl: logoUrl,
-            filterMode: values.filterMode,
+            modoFiltro: values.modoFiltro,
             superAdminSuspended: false,
         });
 
-        toast({ title: 'Éxito', description: `La institución "${values.name}" ha sido creada.` });
+        toast({ title: 'Éxito', description: `La institución "${values.nombre}" ha sido creada.` });
         onFinished();
     } catch (error) {
         console.error('Error creating institution: ', error);
@@ -108,7 +108,7 @@ export function CreateInstitutionForm({ onFinished }: CreateInstitutionFormProps
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="name"
+          name="nombre"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nombre de la Institución *</FormLabel>
@@ -121,7 +121,7 @@ export function CreateInstitutionForm({ onFinished }: CreateInstitutionFormProps
         />
         <FormField
           control={form.control}
-          name="address"
+          name="direccion"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Dirección (Opcional)</FormLabel>
@@ -134,7 +134,7 @@ export function CreateInstitutionForm({ onFinished }: CreateInstitutionFormProps
         />
         <FormField
           control={form.control}
-          name="filterMode"
+          name="modoFiltro"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Modo de Filtro de Navegación</FormLabel>
