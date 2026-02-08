@@ -169,6 +169,20 @@
         "timestamp",
         "readConfirmation"
       ]
+    },
+    "User": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "User",
+        "type": "object",
+        "description": "Represents a user in the system, including administrators and super administrators.",
+        "properties": {
+            "id": { "type": "string", "description": "User's unique identifier (matches auth UID)." },
+            "email": { "type": "string", "format": "email", "description": "User's email address." },
+            "displayName": { "type": "string", "description": "User's display name." },
+            "role": { "type": "string", "description": "User role, e.g., 'admin' or 'superAdmin'." },
+            "institutionId": { "type": "string", "description": "The institution the user belongs to (if not a super admin)." }
+        },
+        "required": ["id", "email", "role"]
     }
   },
   "auth": {
@@ -282,8 +296,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores public user profile information.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "This Firestore structure is designed to support a multi-tenant educational device management system (EFAS EduGuard Pro) while adhering to the principles of Authorization Independence, Structural Segregation, and explicit Access Modeling. The key is to denormalize relevant authorization data (institutionId) into subcollections to avoid expensive `get()` calls in security rules and to enforce tenant-level data isolation. This ensures that administrators of one institution cannot access data belonging to another institution. The structure is also designed to optimize for list operations and minimize read costs.\n\n**Authorization Independence (CRITICAL):** The `institutionId` is explicitly included in the `classrooms`, `devices`, `usageReports`, and `messages` collections. This denormalization means that security rules can validate that the currently authenticated user has access to an `institution` and that the data being accessed belongs to that `institution`, without needing to perform additional reads to check parent document properties. This is especially important when creating child documents in batches or transactions.\n\n**Structural Segregation (Homogeneous Security Posture):** Data for each entity type is stored in its own dedicated collection. This simplifies security rules because all documents within a given collection share the same access control requirements. For example, all documents within the `devices` collection require the same level of authentication and authorization.\n\n**Access Modeling:**\n*   **Institutions:** Institutions are stored at the top level collection `/institutions`. Super Admin can manage these institutions.\n*   **Classrooms, Devices, Usage Reports, Messages:** These are organized as subcollections under the `/institutions/{institutionId}` path. This enables easy querying and management of resources within a specific institution and enforces path-based ownership. The subcollection documents all include `institutionId` for enforcing proper security rules.\n\n**QAPs (Rules are not Filters):** This structure facilitates secure `list` operations because the security rules can enforce that a user can only `list` resources belonging to their institution. The `institutionId` included in each subcollection document is essential for filtering by this criteria.\n\nThe design also takes into account the desire for cost optimization, as detailed in the prompt:\n*   **Optimized Reads:** The data structure avoids cascading reads with its design. This keeps reads down, which is important when you want to run at the spark plan.\n*   **Realtime Database:** The prompt recommends that the RTDB is for reading and Firestore for metadata. This is reflected by putting the switches in the RTDB and other long lasting metadata in Firestore.\n\n**Limitations:**\nThis design does not enforce uniqueness of names. It is assumed this will be handled client-side. Furthermore, message sender ID is stored directly in the `messages` collection rather than in the user object. We can assume the application code will pull the user ID and push it to the `messages` collection to avoid additional reads."
   }
 }
+
+    

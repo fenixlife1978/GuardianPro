@@ -14,8 +14,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/common/logo';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -26,13 +27,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
+    if (!auth || !firestore) return;
 
     setLoading(true);
     setError(null);
@@ -48,7 +50,27 @@ export default function LoginPage() {
         description: 'Redirigiendo a tu panel...',
       });
       
-      const isSuperAdmin = idTokenResult.claims.isSuperAdmin === true;
+      const isSuperAdminByClaim = idTokenResult.claims.isSuperAdmin === true;
+      const isSuperAdminByUID = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
+      const isSuperAdmin = isSuperAdminByClaim || isSuperAdminByUID;
+
+      if (isSuperAdmin) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            try {
+                await setDoc(userDocRef, {
+                    id: user.uid,
+                    email: user.email,
+                    role: 'superAdmin',
+                    displayName: user.email?.split('@')[0] || 'Super Admin'
+                });
+            } catch (e) {
+                console.error("Error creating super admin profile:", e);
+                // Non-blocking error, login flow should continue
+            }
+        }
+      }
 
       const redirectUrl = searchParams.get('redirect');
 
@@ -144,3 +166,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

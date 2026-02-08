@@ -17,8 +17,8 @@ service cloud.firestore {
      * path-based security rules and efficient, tenant-scoped queries.
      *
      * Key Security Decisions:
-     * - Authorization via Custom Claims: Access is primarily controlled by custom claims
-     *   (institutionId, isSuperAdmin) in the user's auth token. This is highly performant
+     * - Authorization via UID and Custom Claims: Access is primarily controlled by a specific Super Admin UID
+     *   or custom claims (institutionId, isSuperAdmin) in the user's auth token. This is highly performant
      *   as it avoids extra database reads for authorization checks.
      * - Super Admin Role: A global Super Admin role is implemented, granting full
      *   read/write access across all institutions for management purposes.
@@ -51,11 +51,12 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the user has the Super Admin custom claim.
-     * Super Admins have elevated privileges across the system.
+     * Checks if the user has the Super Admin role.
+     * Super Admin is identified by a specific, hardcoded UID for ultimate authority,
+     * or by a custom claim `isSuperAdmin`.
      */
     function isSuperAdmin() {
-      return isSignedIn() && request.auth.token.isSuperAdmin == true;
+      return isSignedIn() && (request.auth.uid == 'QeGMDNE4GaSJOU8XEnY3lFJ9by13' || request.auth.token.isSuperAdmin == true);
     }
 
     /**
@@ -126,6 +127,19 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
     // Collection Rules
     //-------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to User profile documents.
+     * @path /users/{userId}
+     * @allow (get, update) A user can read or write their own profile. A Super Admin can read/write any profile.
+     * @deny (list) A regular user cannot list all users.
+     * @principle Enforces user ownership of their own profile data, with Super Admin override.
+     */
+    match /users/{userId} {
+      allow get, update: if isSuperAdmin() || request.auth.uid == userId;
+      allow create, delete: if isSuperAdmin();
+      allow list: if isSuperAdmin();
+    }
 
     /**
      * @description Controls access to Institution documents.
@@ -199,3 +213,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
