@@ -21,8 +21,11 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, redirect } from 'next/navigation';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
+import { useUser } from '@/firebase';
+import { useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
@@ -90,11 +93,52 @@ const AdminSidebar = () => {
     );
 }
 
+function AdminLayoutLoading() {
+    return (
+      <div className="flex h-screen w-full">
+        <div className="hidden md:flex h-full w-64 flex-col border-r">
+            <div className='p-4'><Skeleton className="h-8 w-32" /></div>
+            <div className="p-4 space-y-4">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+        </div>
+        <div className="flex-1 flex flex-col">
+            <header className="flex h-16 items-center justify-between border-b px-8">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+            </header>
+            <main className="flex-1 p-8">
+                <Skeleton className="h-full w-full" />
+            </main>
+        </div>
+      </div>
+    )
+}
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+    const { user, loading, error } = useUser();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        if (!loading && !user && !error) {
+            redirect(`/login?redirect=${pathname}`);
+        }
+    }, [user, loading, error, pathname]);
+
+    if (loading) {
+        return <AdminLayoutLoading />;
+    }
+
+    if (!user) {
+        return null;
+    }
+
   return (
     <SidebarProvider>
       <AdminSidebar/>

@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This rule is insecure for production. It allows any device to start the enrollment process.
+    // For a real application, this should be protected, perhaps with a Cloud Function and temporary tokens.
+    match /pending_enrollments/{enrollmentId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Only authenticated users (admins) can manage the definitive device list.
+    match /devices/{deviceId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

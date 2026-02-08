@@ -1,125 +1,152 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Camera, CameraOff, QrCode } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { QrCode, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
+import QRCode from 'react-qr-code';
+import { useFirestore, useDoc } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { EnrollmentModal } from '@/components/admin/enrollment-modal';
+import type { PendingEnrollment } from '@/lib/firestore';
+import { useMemoFirebase } from '@/hooks/use-memo-firebase';
 
-const QR_READER_ID = "qr-reader";
+const mockClassrooms = [
+    { id: 'aula-3b', name: 'Aula 3B' },
+    { id: 'aula-4a', name: 'Aula 4A' },
+    { id: 'aula-5c', name: 'Aula 5C' },
+];
 
 export default function EnrollmentPage() {
-    const [isScanning, setIsScanning] = useState(false);
-    const [scanResult, setScanResult] = useState<string | null>(null);
+    const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null);
+    const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    const firestore = useFirestore();
     const { toast } = useToast();
 
+    const enrollmentDocRef = useMemoFirebase(() => {
+        if (!firestore || !enrollmentId) return null;
+        return doc(firestore, 'pending_enrollments', enrollmentId);
+    }, [firestore, enrollmentId]);
+
+    const { data: pendingEnrollment, loading } = useDoc<PendingEnrollment>(enrollmentDocRef);
+
     useEffect(() => {
-        let scanner: Html5QrcodeScanner | null = null;
-
-        if (isScanning) {
-            scanner = new Html5QrcodeScanner(
-                QR_READER_ID,
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    rememberLastUsedCamera: true,
-                    supportedScanTypes: [0] // 0 for SCAN_TYPE_CAMERA
-                },
-                false // verbose
-            );
-
-            const onScanSuccess = (decodedText: string, decodedResult: any) => {
-                // The library stops scanning automatically on success.
-                setIsScanning(false);
-                setScanResult(decodedText);
-                toast({
-                    title: "Código QR Escaneado",
-                    description: `Dispositivo listo para enrolar.`,
-                });
-            };
-
-            const onScanFailure = (error: any) => {
-                // This is called on every frame that doesn't contain a QR code.
-                // We can ignore it.
-            };
-
-            scanner.render(onScanSuccess, onScanFailure);
+        if (pendingEnrollment) {
+            toast({
+                title: "Dispositivo detectado",
+                description: `Un nuevo dispositivo está listo para ser confirmado.`,
+            });
+            setIsModalOpen(true);
         }
+    }, [pendingEnrollment, toast]);
 
-        return () => {
-            // When the component unmounts or `isScanning` changes, we clean up.
-            // It's possible the scanner is already stopped (e.g., after a successful scan).
-            // Trying to clear it again would throw an error, which we can safely ignore.
-            if (scanner) {
-                scanner.clear().catch(() => {
-                    // Ignore any errors during cleanup.
-                });
-            }
-        };
-    }, [isScanning, toast]);
-
-    const toggleScanning = () => {
-        setScanResult(null);
-        setIsScanning(prev => !prev);
+    const handleGenerateQR = () => {
+        if (!selectedClassroom) {
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "Por favor, selecciona un aula.",
+            });
+            return;
+        }
+        if (firestore) {
+            const newEnrollmentId = doc(collection(firestore, '_')).id;
+            setEnrollmentId(newEnrollmentId);
+        }
     };
+    
+    const qrValue = useMemo(() => {
+        if (!enrollmentId || !selectedClassroom) return null;
+        return JSON.stringify({
+            enrollmentId: enrollmentId,
+            classroomId: selectedClassroom,
+        });
+    }, [enrollmentId, selectedClassroom]);
+
+    const handleEnrollmentConfirmed = () => {
+        setIsModalOpen(false);
+        setEnrollmentId(null);
+        setSelectedClassroom(null);
+        toast({
+            title: "Éxito",
+            description: "El dispositivo ha sido enrolado y configurado exitosamente.",
+        });
+    }
+
+    const resetFlow = () => {
+        setEnrollmentId(null);
+        setSelectedClassroom(null);
+    }
 
     return (
         <div className="space-y-8">
+            <EnrollmentModal 
+                isOpen={isModalOpen}
+                onOpenChange={setIsModalOpen}
+                enrollmentId={enrollmentId}
+                pendingEnrollment={pendingEnrollment}
+                onConfirmed={handleEnrollmentConfirmed}
+            />
+
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Inscripción Masiva de Dispositivos</h2>
-                <p className="text-muted-foreground">Usa la cámara para escanear el código QR de un dispositivo y enrolarlo.</p>
+                <h2 className="text-3xl font-bold tracking-tight">Inscripción de Dispositivos</h2>
+                <p className="text-muted-foreground">Genera un código QR para que un nuevo dispositivo se una a un aula.</p>
             </div>
 
             <Card className="max-w-md mx-auto">
                 <CardHeader>
-                    <CardTitle>Escáner de Código QR</CardTitle>
+                    <CardTitle>Generador de Código QR</CardTitle>
                     <CardDescription>
-                        {isScanning
-                            ? 'Apunta la cámara al código QR.'
-                            : 'Presiona el botón para iniciar el escáner.'}
+                        Selecciona un aula para generar un código QR único de inscripción.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex items-center justify-center p-8 min-h-[300px]">
-                    {isScanning ? (
-                        <div id={QR_READER_ID} className="w-full" />
+                <CardContent className="space-y-6">
+                    {!qrValue ? (
+                         <div className="space-y-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="classroom-select">Seleccionar Aula</Label>
+                                <Select onValueChange={setSelectedClassroom} value={selectedClassroom || ''}>
+                                    <SelectTrigger id="classroom-select">
+                                        <SelectValue placeholder="Selecciona un aula..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {mockClassrooms.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <Button onClick={handleGenerateQR} disabled={!selectedClassroom} className="w-full">
+                                <QrCode className="mr-2 h-4 w-4" />
+                                Generar Código QR
+                            </Button>
+                        </div>
                     ) : (
-                        <div className="flex flex-col items-center text-center text-muted-foreground">
-                            {scanResult ? (
-                                <Alert>
-                                    <QrCode className="h-4 w-4" />
-                                    <AlertTitle>Escaneo Exitoso</AlertTitle>
-                                    <AlertDescription>
-                                        <p>El dispositivo con ID:</p>
-                                        <p className="font-mono bg-muted p-2 rounded-md my-2 break-all">{scanResult}</p>
-                                        <p>ha sido registrado y está listo para ser configurado.</p>
-                                    </AlertDescription>
-                                </Alert>
-                            ) : (
-                                <>
-                                    <QrCode className="h-16 w-16 mb-4" />
-                                    <p>El escáner de QR está inactivo.</p>
-                                </>
-                            )}
+                        <div className="flex flex-col items-center text-center text-muted-foreground space-y-4">
+                            <div className='p-4 bg-white rounded-lg'>
+                                <QRCode value={qrValue} size={256} />
+                            </div>
+                           
+                            <Alert>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <AlertTitle>Esperando Escaneo...</AlertTitle>
+                                <AlertDescription>
+                                    Pídele al usuario de la tablet que escanee este código para iniciar el proceso de inscripción.
+                                </AlertDescription>
+                            </Alert>
+
+                            <Button onClick={resetFlow} variant="outline">
+                                Cancelar / Generar Otro
+                            </Button>
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="flex justify-center">
-                    <Button onClick={toggleScanning} variant={scanResult ? "secondary" : "default"}>
-                        {isScanning ? (
-                            <>
-                                <CameraOff className="mr-2 h-4 w-4" />
-                                Detener Escáner
-                            </>
-                        ) : (
-                            <>
-                                <Camera className="mr-2 h-4 w-4" />
-                                {scanResult ? 'Escanear Otro' : 'Iniciar Escáner'}
-                            </>
-                        )}
-                    </Button>
-                </CardFooter>
             </Card>
         </div>
     )

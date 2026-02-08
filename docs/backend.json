@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "pendingEnrollment": {
+      "title": "Pending Enrollment",
+      "description": "A device pending enrollment confirmation from an admin.",
+      "type": "object",
+      "properties": {
+        "classroomId": {
+          "type": "string",
+          "description": "The ID of the classroom the device is being enrolled into."
+        },
+        "deviceInfo": {
+          "type": "object",
+          "description": "Information about the device being enrolled.",
+          "properties": {
+            "macAddress": { "type": "string" },
+            "model": { "type": "string" }
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the pending enrollment was created."
+        }
+      },
+      "required": ["classroomId", "deviceInfo", "createdAt"]
+    },
+    "device": {
+      "title": "Device",
+      "description": "An enrolled device assigned to a student.",
+      "type": "object",
+      "properties": {
+        "studentName": {
+          "type": "string",
+          "description": "The name of the student assigned to the device."
+        },
+        "classroomId": {
+          "type": "string",
+          "description": "The ID of the classroom the device belongs to."
+        },
+        "deviceInfo": {
+          "type": "object",
+          "description": "Information about the enrolled device.",
+          "properties": {
+            "macAddress": { "type": "string" },
+            "model": { "type": "string" }
+          }
+        },
+        "enrolledAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the device was officially enrolled."
+        },
+        "institutionId": {
+            "type": "string",
+            "description": "The ID of the institution the device belongs to."
+        }
+      },
+      "required": ["studentName", "classroomId", "deviceInfo", "enrolledAt", "institutionId"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "/pending_enrollments/{enrollmentId}": {
+      "schema": {
+        "$ref": "#/entities/pendingEnrollment"
+      },
+      "description": "Collection for devices that have scanned a QR code but are waiting for admin approval."
+    },
+    "/devices/{deviceId}": {
+      "schema": {
+        "$ref": "#/entities/device"
+      },
+      "description": "Collection of all approved and enrolled devices."
+    }
+  }
+}
