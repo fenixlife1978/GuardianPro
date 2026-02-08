@@ -1,22 +1,201 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This rule is insecure for production. It allows any device to start the enrollment process.
-    // For a real application, this should be protected, perhaps with a Cloud Function and temporary tokens.
-    match /pending_enrollments/{enrollmentId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null;
+
+    /**
+     * Core Philosophy:
+     * This ruleset enforces a strict multi-tenant security model. Data is partitioned by
+     * an 'institution', and a user's access is determined by their assigned
+     * 'institutionId' and role (e.g., Super Admin), which are expected to be present
+     * as custom claims in their authentication token. This prevents users from one
+     * institution from accessing the data of another.
+     *
+     * Data Structure:
+     * The data is organized hierarchically, with top-level 'institutions' collections.
+     * All other data, such as classrooms, devices, and reports, are stored in
+     * subcollections under their respective institution. This structure enables clear,
+     * path-based security rules and efficient, tenant-scoped queries.
+     *
+     * Key Security Decisions:
+     * - Authorization via Custom Claims: Access is primarily controlled by custom claims
+     *   (institutionId, isSuperAdmin) in the user's auth token. This is highly performant
+     *   as it avoids extra database reads for authorization checks.
+     * - Super Admin Role: A global Super Admin role is implemented, granting full
+     *   read/write access across all institutions for management purposes.
+     * - Tenant Isolation: The core rule is that a regular user can only access data
+     *   within the institution specified in their auth token. Listing all institutions is
+     *   denied to regular users to prevent information leakage.
+     * - Default Deny: Access is denied by default. Permissions must be explicitly granted.
+     *
+     * Denormalization for Authorization:
+     * To ensure fast and secure authorization, the `institutionId` is denormalized
+     * and stored on all documents within subcollections (e.g., classrooms, devices).
+     * This allows rules to validate tenant ownership without performing costly `get()`
+     * calls to parent documents.
+     *
+     * Structural Segregation:
+     * Each data entity (Institution, Classroom, Device, etc.) is stored in its own
+     * dedicated collection or subcollection. This ensures that all documents within a
+     * given collection path share the same security posture, simplifying the ruleset.
+     */
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Only authenticated users (admins) can manage the definitive device list.
-    match /devices/{deviceId} {
-      allow read, write: if request.auth != null;
+    /**
+     * Checks if the user has the Super Admin custom claim.
+     * Super Admins have elevated privileges across the system.
+     */
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.isSuperAdmin == true;
     }
 
-    // Deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+    /**
+     * Checks if the user belongs to a specific institution via custom claims.
+     */
+    function isMemberOfInstitution(institutionId) {
+      return isSignedIn() && request.auth.token.institutionId == institutionId;
+    }
+
+    /**
+     * Checks if the user is either a Super Admin or a member of the specified institution.
+     * This is the primary authorization function for most resources.
+     */
+    function isInstitutionMemberOrSuperAdmin(institutionId) {
+      return isSuperAdmin() || isMemberOfInstitution(institutionId);
+    }
+    
+    /**
+     * Verifies that a document being created has an institutionId that matches the path.
+     */
+    function hasCorrectInstitutionIdOnCreate(institutionId) {
+        return request.resource.data.institutionId == institutionId;
+    }
+    
+    /**
+     * Verifies that the institutionId of a document is not being changed during an update.
+     */
+    function institutionIdIsImmutable() {
+        return request.resource.data.institutionId == resource.data.institutionId;
+    }
+
+    /**
+     * Verifies that the deviceId on a subcollection document matches the path on create.
+     */
+    function hasCorrectDeviceIdOnCreate(deviceId) {
+      return request.resource.data.deviceId == deviceId;
+    }
+    
+    /**
+     * Verifies that the deviceId of a subcollection document is immutable on update.
+     */
+    function deviceIdIsImmutable() {
+      return request.resource.data.deviceId == resource.data.deviceId;
+    }
+    
+    /**
+     * Verifies that the senderId of a message is the authenticated user on create.
+     */
+    function senderIsCurrentUser() {
+      return request.resource.data.senderId == request.auth.uid;
+    }
+
+    /**
+     * Verifies that the senderId of a message is immutable on update.
+     */
+    function senderIsImmutable() {
+      return request.resource.data.senderId == resource.data.senderId;
+    }
+
+    /**
+     * Checks if a device document exists and belongs to the correct institution path.
+     * Used to secure device subcollections.
+     */
+    function isDeviceInCorrectInstitution(institutionId, deviceId) {
+      return get(/databases/$(database)/documents/institutions/$(institutionId)/devices/$(deviceId)).data.institutionId == institutionId;
+    }
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to Institution documents.
+     * @path /institutions/{institutionId}
+     * @allow (get) A user with a custom claim `institutionId` matching the document can read it. A Super Admin can also read it.
+     * @deny (list) A regular institution member cannot list all institutions in the system.
+     * @principle Enforces tenant isolation and provides a global management role (Super Admin).
+     */
+    match /institutions/{institutionId} {
+      allow get: if isInstitutionMemberOrSuperAdmin(institutionId);
+      allow list: if isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    /**
+     * @description Controls access to Classroom documents within an institution.
+     * @path /institutions/{institutionId}/classrooms/{classroomId}
+     * @allow (create) An authenticated member of the institution can create a new classroom.
+     * @deny (update) A user from a different institution cannot update a classroom.
+     * @principle Enforces tenant ownership for all operations and validates relational integrity on writes.
+     */
+    match /institutions/{institutionId}/classrooms/{classroomId} {
+      allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId);
+      allow create: if isInstitutionMemberOrSuperAdmin(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId);
+      allow update: if isInstitutionMemberOrSuperAdmin(institutionId) && institutionIdIsImmutable();
+      allow delete: if isInstitutionMemberOrSuperAdmin(institutionId);
+    }
+
+    /**
+     * @description Controls access to Device documents within an institution.
+     * @path /institutions/{institutionId}/devices/{deviceId}
+     * @allow (get) An authenticated member of the institution can read device details.
+     * @deny (create) An anonymous user cannot create a device.
+     * @principle Restricts access to members of the parent institution and validates path consistency.
+     */
+    match /institutions/{institutionId}/devices/{deviceId} {
+      allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId);
+      allow create: if isInstitutionMemberOrSuperAdmin(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId);
+      allow update: if isInstitutionMemberOrSuperAdmin(institutionId) && institutionIdIsImmutable();
+      allow delete: if isInstitutionMemberOrSuperAdmin(institutionId);
+    }
+
+    /**
+     * @description Controls access to UsageReport documents for a specific device.
+     * @path /institutions/{institutionId}/devices/{deviceId}/usageReports/{usageReportId}
+     * @allow (list) An institution member can list all usage reports for a device within their institution.
+     * @deny (create) A user cannot create a usage report for a device in another institution.
+     * @principle Cascades ownership rules from the parent institution and ensures subcollection data integrity.
+     */
+    match /institutions/{institutionId}/devices/{deviceId}/usageReports/{usageReportId} {
+      allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId);
+      allow create: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId) && hasCorrectDeviceIdOnCreate(deviceId);
+      allow update: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId) && deviceIdIsImmutable();
+      allow delete: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId);
+    }
+
+    /**
+     * @description Controls access to Message documents sent to a specific device.
+     * @path /institutions/{institutionId}/devices/{deviceId}/messages/{messageId}
+     * @allow (create) An authenticated institution member can send a message, and the senderId is correctly set to their own UID.
+     * @deny (create) A user cannot send a message with a forged `senderId`.
+     * @principle Validates that the message sender is the authenticated user and restricts access to the correct institution.
+     */
+    match /institutions/{institutionId}/devices/{deviceId}/messages/{messageId} {
+      allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId);
+      allow create: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId) && hasCorrectDeviceIdOnCreate(deviceId) && senderIsCurrentUser();
+      allow update: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId) && deviceIdIsImmutable() && senderIsImmutable();
+      allow delete: if isInstitutionMemberOrSuperAdmin(institutionId) && isDeviceInCorrectInstitution(institutionId, deviceId);
     }
   }
 }

@@ -1,81 +1,284 @@
 {
   "entities": {
-    "pendingEnrollment": {
-      "title": "Pending Enrollment",
-      "description": "A device pending enrollment confirmation from an admin.",
+    "Institution": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Institution",
       "type": "object",
+      "description": "Represents an educational institution or tenant within the multi-tenant system.",
       "properties": {
-        "classroomId": {
+        "id": {
           "type": "string",
-          "description": "The ID of the classroom the device is being enrolled into."
+          "description": "Unique identifier for the institution."
         },
-        "deviceInfo": {
-          "type": "object",
-          "description": "Information about the device being enrolled.",
-          "properties": {
-            "macAddress": { "type": "string" },
-            "model": { "type": "string" }
-          }
-        },
-        "createdAt": {
+        "name": {
           "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the pending enrollment was created."
+          "description": "Name of the institution."
+        },
+        "superAdminSuspended": {
+          "type": "boolean",
+          "description": "Indicates whether the institution is suspended by the super admin."
         }
       },
-      "required": ["classroomId", "deviceInfo", "createdAt"]
+      "required": [
+        "id",
+        "name",
+        "superAdminSuspended"
+      ]
     },
-    "device": {
-      "title": "Device",
-      "description": "An enrolled device assigned to a student.",
+    "Classroom": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Classroom",
       "type": "object",
+      "description": "Represents a classroom within an institution.",
       "properties": {
-        "studentName": {
+        "id": {
           "type": "string",
-          "description": "The name of the student assigned to the device."
-        },
-        "classroomId": {
-          "type": "string",
-          "description": "The ID of the classroom the device belongs to."
-        },
-        "deviceInfo": {
-          "type": "object",
-          "description": "Information about the enrolled device.",
-          "properties": {
-            "macAddress": { "type": "string" },
-            "model": { "type": "string" }
-          }
-        },
-        "enrolledAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the device was officially enrolled."
+          "description": "Unique identifier for the classroom."
         },
         "institutionId": {
-            "type": "string",
-            "description": "The ID of the institution the device belongs to."
+          "type": "string",
+          "description": "Reference to Institution. (Relationship: Institution 1:N Classroom)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the classroom."
         }
       },
-      "required": ["studentName", "classroomId", "deviceInfo", "enrolledAt", "institutionId"]
+      "required": [
+        "id",
+        "institutionId",
+        "name"
+      ]
+    },
+    "Device": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Device",
+      "type": "object",
+      "description": "Represents a student's device being monitored.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the device."
+        },
+        "institutionId": {
+          "type": "string",
+          "description": "Reference to Institution. (Relationship: Institution 1:N Device)"
+        },
+        "classroomId": {
+          "type": "string",
+          "description": "Reference to Classroom. (Relationship: Classroom 1:N Device)"
+        },
+        "enrollmentToken": {
+          "type": "string",
+          "description": "Token used for enrolling the device."
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Indicates whether the device's restrictions are active."
+        }
+      },
+      "required": [
+        "id",
+        "institutionId",
+        "classroomId",
+        "enrollmentToken",
+        "published"
+      ]
+    },
+    "UsageReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UsageReport",
+      "type": "object",
+      "description": "Represents a summary of device usage data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the usage report."
+        },
+        "deviceId": {
+          "type": "string",
+          "description": "Reference to Device. (Relationship: Device 1:N UsageReport)"
+        },
+        "reportTime": {
+          "type": "string",
+          "description": "Timestamp of when the usage report was generated.",
+          "format": "date-time"
+        },
+        "appUsage": {
+          "type": "array",
+          "description": "Array of app usage statistics.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "violationCount": {
+          "type": "number",
+          "description": "Number of policy violations recorded."
+        }
+      },
+      "required": [
+        "id",
+        "deviceId",
+        "reportTime",
+        "appUsage",
+        "violationCount"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a direct message sent to a device.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "deviceId": {
+          "type": "string",
+          "description": "Reference to Device. (Relationship: Device 1:N Message)"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to User who sent the message"
+        },
+        "messageText": {
+          "type": "string",
+          "description": "Text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the message was sent.",
+          "format": "date-time"
+        },
+        "readConfirmation": {
+          "type": "boolean",
+          "description": "Indicates whether the message has been read by the recipient."
+        }
+      },
+      "required": [
+        "id",
+        "deviceId",
+        "senderId",
+        "messageText",
+        "timestamp",
+        "readConfirmation"
+      ]
     }
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
-    "/pending_enrollments/{enrollmentId}": {
-      "schema": {
-        "$ref": "#/entities/pendingEnrollment"
+    "structure": [
+      {
+        "path": "/institutions/{institutionId}",
+        "definition": {
+          "entityName": "Institution",
+          "schema": {
+            "$ref": "#/backend/entities/Institution"
+          },
+          "description": "Represents an educational institution. The 'institutionId' parameter is used to uniquely identify each institution.",
+          "params": [
+            {
+              "name": "institutionId",
+              "description": "Unique identifier for the institution."
+            }
+          ]
+        }
       },
-      "description": "Collection for devices that have scanned a QR code but are waiting for admin approval."
-    },
-    "/devices/{deviceId}": {
-      "schema": {
-        "$ref": "#/entities/device"
+      {
+        "path": "/institutions/{institutionId}/classrooms/{classroomId}",
+        "definition": {
+          "entityName": "Classroom",
+          "schema": {
+            "$ref": "#/backend/entities/Classroom"
+          },
+          "description": "Represents a classroom within an institution. Includes denormalized 'institutionId' for authorization independence.",
+          "params": [
+            {
+              "name": "institutionId",
+              "description": "Unique identifier for the institution."
+            },
+            {
+              "name": "classroomId",
+              "description": "Unique identifier for the classroom."
+            }
+          ]
+        }
       },
-      "description": "Collection of all approved and enrolled devices."
-    }
+      {
+        "path": "/institutions/{institutionId}/devices/{deviceId}",
+        "definition": {
+          "entityName": "Device",
+          "schema": {
+            "$ref": "#/backend/entities/Device"
+          },
+          "description": "Represents a device being managed within an institution and classroom. Includes denormalized 'institutionId' for authorization independence.",
+          "params": [
+            {
+              "name": "institutionId",
+              "description": "Unique identifier for the institution."
+            },
+            {
+              "name": "deviceId",
+              "description": "Unique identifier for the device."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/institutions/{institutionId}/devices/{deviceId}/usageReports/{usageReportId}",
+        "definition": {
+          "entityName": "UsageReport",
+          "schema": {
+            "$ref": "#/backend/entities/UsageReport"
+          },
+          "description": "Represents usage reports for a specific device. Includes denormalized 'institutionId' for authorization independence.",
+          "params": [
+            {
+              "name": "institutionId",
+              "description": "Unique identifier for the institution."
+            },
+            {
+              "name": "deviceId",
+              "description": "Unique identifier for the device."
+            },
+            {
+              "name": "usageReportId",
+              "description": "Unique identifier for the usage report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/institutions/{institutionId}/devices/{deviceId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Represents direct messages sent to a device. Includes denormalized 'institutionId' for authorization independence.",
+          "params": [
+            {
+              "name": "institutionId",
+              "description": "Unique identifier for the institution."
+            },
+            {
+              "name": "deviceId",
+              "description": "Unique identifier for the device."
+            },
+            {
+              "name": "messageId",
+              "description": "Unique identifier for the message."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support a multi-tenant educational device management system (EFAS EduGuard Pro) while adhering to the principles of Authorization Independence, Structural Segregation, and explicit Access Modeling. The key is to denormalize relevant authorization data (institutionId) into subcollections to avoid expensive `get()` calls in security rules and to enforce tenant-level data isolation. This ensures that administrators of one institution cannot access data belonging to another institution. The structure is also designed to optimize for list operations and minimize read costs.\n\n**Authorization Independence (CRITICAL):** The `institutionId` is explicitly included in the `classrooms`, `devices`, `usageReports`, and `messages` collections. This denormalization means that security rules can validate that the currently authenticated user has access to an `institution` and that the data being accessed belongs to that `institution`, without needing to perform additional reads to check parent document properties. This is especially important when creating child documents in batches or transactions.\n\n**Structural Segregation (Homogeneous Security Posture):** Data for each entity type is stored in its own dedicated collection. This simplifies security rules because all documents within a given collection share the same access control requirements. For example, all documents within the `devices` collection require the same level of authentication and authorization.\n\n**Access Modeling:**\n*   **Institutions:** Institutions are stored at the top level collection `/institutions`. Super Admin can manage these institutions.\n*   **Classrooms, Devices, Usage Reports, Messages:** These are organized as subcollections under the `/institutions/{institutionId}` path. This enables easy querying and management of resources within a specific institution and enforces path-based ownership. The subcollection documents all include `institutionId` for enforcing proper security rules.\n\n**QAPs (Rules are not Filters):** This structure facilitates secure `list` operations because the security rules can enforce that a user can only `list` resources belonging to their institution. The `institutionId` included in each subcollection document is essential for filtering by this criteria.\n\nThe design also takes into account the desire for cost optimization, as detailed in the prompt:\n*   **Optimized Reads:** The data structure avoids cascading reads with its design. This keeps reads down, which is important when you want to run at the spark plan.\n*   **Realtime Database:** The prompt recommends that the RTDB is for reading and Firestore for metadata. This is reflected by putting the switches in the RTDB and other long lasting metadata in Firestore.\n\n**Limitations:**\nThis design does not enforce uniqueness of names. It is assumed this will be handled client-side. Furthermore, message sender ID is stored directly in the `messages` collection rather than in the user object. We can assume the application code will pull the user ID and push it to the `messages` collection to avoid additional reads."
   }
 }
