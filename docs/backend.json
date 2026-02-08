@@ -85,6 +85,10 @@
           "type": "string",
           "description": "Name of the student assigned to the device."
         },
+        "nro_equipo": {
+          "type": "string",
+          "description": "The chronological device number within the classroom (e.g., '01', '02')."
+        },
         "modelo": {
           "type": "string",
           "description": "The hardware model of the device."
@@ -124,6 +128,7 @@
         "institutionId",
         "classroomId",
         "nombre_alumno",
+        "nro_equipo",
         "modelo",
         "macAddress"
       ]

@@ -22,6 +22,7 @@ export interface Alumno {
   institutionId: string;
   classroomId: string;
   nombre_alumno: string;
+  nro_equipo: string;
   modelo: string;
   macAddress: string;
   logs_actividad?: {

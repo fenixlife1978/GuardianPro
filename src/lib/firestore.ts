@@ -3,6 +3,8 @@ import {
   doc,
   writeBatch,
   Firestore,
+  collection,
+  getDocs,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -25,6 +27,20 @@ export async function confirmEnrollment({
 }: ConfirmEnrollmentParams): Promise<void> {
   const batch = writeBatch(firestore);
 
+  // Calculate the next device number
+  const alumnosRef = collection(firestore, 'institutions', institutionId, 'Aulas', pendingData.classroomId, 'Alumnos');
+  const snapshot = await getDocs(alumnosRef).catch(e => {
+    // Handle potential permission error on getDocs
+     const permissionError = new FirestorePermissionError({
+      path: alumnosRef.path,
+      operation: 'list',
+    });
+    errorEmitter.emit('permission-error', permissionError);
+    throw e;
+  });
+  const nextNumber = snapshot.size + 1;
+  const nroEquipo = nextNumber.toString().padStart(2, '0');
+
   // 1. Define the reference to the document in /pending_enrollments
   const pendingDocRef = doc(firestore, 'pending_enrollments', enrollmentId);
 
@@ -43,6 +59,7 @@ export async function confirmEnrollment({
     institutionId: institutionId,
     macAddress: pendingData.deviceInfo.macAddress,
     modelo: pendingData.deviceInfo.model,
+    nro_equipo: nroEquipo,
   };
 
   // 4. Add operations to the batch

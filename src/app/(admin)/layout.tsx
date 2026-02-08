@@ -6,6 +6,7 @@ import {
   QrCode,
   Settings,
   Loader2,
+  School,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -46,6 +47,14 @@ const AdminSidebar = () => {
                             <Link href="/dashboard/reports">
                                 <BarChart2 />
                                 <span>Reportes</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={isActive('/dashboard/classrooms')} tooltip="Aulas">
+                            <Link href="/dashboard/classrooms">
+                                <School />
+                                <span>Aulas</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
