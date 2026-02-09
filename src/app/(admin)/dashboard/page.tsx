@@ -17,5 +17,5 @@ export default function DashboardPage({
   }
 
   const queryString = params.toString();
-  redirect(`/dashboard/reports${queryString ? `?${queryString}` : ''}`);
+  redirect(`/dashboard/classrooms${queryString ? `?${queryString}` : ''}`);
 }

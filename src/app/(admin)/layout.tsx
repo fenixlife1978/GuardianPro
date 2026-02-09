@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  BarChart2,
+  GraduationCap,
   Home,
   QrCode,
   Settings,
   Loader2,
-  School,
+  ChevronDown,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -19,21 +19,28 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname, redirect, useSearchParams } from 'next/navigation';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useEffect, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Logo } from '@/components/common/logo';
-import { InstitutionProvider } from './institution-context';
+import { InstitutionProvider, useInstitution } from './institution-context';
+import { collection } from 'firebase/firestore';
+import type { Classroom, Institution } from '@/lib/firestore-types';
+import { DashboardHeader } from '@/components/admin/dashboard-header';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const institutionId = searchParams.get('institutionId');
-    const isActive = (path: string) => pathname.startsWith(path);
+    const isActive = (path: string) => pathname === path;
+    const { institutionId: contextInstitutionId } = useInstitution();
+    const firestore = useFirestore();
 
     const createLink = (path: string) => {
         const params = new URLSearchParams();
@@ -44,6 +51,13 @@ const AdminSidebar = () => {
         return `${path}${queryString ? `?${queryString}` : ''}`;
     }
 
+    const classroomsRef = useMemoFirebase(() => {
+        if (!firestore || !contextInstitutionId) return null;
+        return collection(firestore, 'institutions', contextInstitutionId, 'Aulas');
+    }, [firestore, contextInstitutionId]);
+
+    const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsRef);
+
     return (
         <Sidebar>
             <SidebarHeader>
@@ -52,20 +66,34 @@ const AdminSidebar = () => {
               </div>
             </SidebarHeader>
             <SidebarContent>
+                <SidebarGroup>
+                    <SidebarGroupLabel className='flex justify-between'>
+                        GRADO 1° <ChevronDown size={16} />
+                    </SidebarGroupLabel>
+                    <SidebarMenu>
+                        {classroomsLoading && (
+                            <>
+                                <Skeleton className='h-8 w-full' />
+                                <Skeleton className='h-8 w-full' />
+                            </>
+                        )}
+                        {classrooms?.map(classroom => (
+                            <SidebarMenuItem key={classroom.id}>
+                                <SidebarMenuButton asChild isActive={isActive(`/dashboard/classrooms/${classroom.id}`)} tooltip={classroom.nombre_aula}>
+                                    <Link href={createLink(`/dashboard/classrooms/${classroom.id}`)}>
+                                        <GraduationCap />
+                                        <span>{classroom.nombre_aula}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroup>
                 <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={isActive('/dashboard/reports')} tooltip="Reportes">
-                            <Link href={createLink('/dashboard/reports')}>
-                                <BarChart2 />
-                                <span>Reportes</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={isActive('/dashboard/classrooms')} tooltip="Aulas">
                             <Link href={createLink('/dashboard/classrooms')}>
-                                <School />
-                                <span>Aulas</span>
+                                <span>OTRAS AULAS...</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -152,21 +180,21 @@ function AdminLayoutComponent({
     }
 
     return (
-        <SidebarProvider>
-        <AdminSidebar/>
-        <SidebarInset>
-            <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-8">
-                <SidebarTrigger className="md:hidden"/>
-                <div className="hidden font-semibold md:block">Panel de Administración</div>
-                <AdminUserNav/>
-            </header>
-            <main className="flex-1 p-4 md:p-8">
-                <InstitutionProvider>
+        <InstitutionProvider>
+            <SidebarProvider>
+            <AdminSidebar/>
+            <SidebarInset>
+                <header className="flex h-16 w-full items-center justify-between border-b bg-background px-4 md:px-8">
+                    <SidebarTrigger className="md:hidden"/>
+                    <DashboardHeader />
+                    <AdminUserNav/>
+                </header>
+                <main className="flex-1 p-4 md:p-8">
                     {children}
-                </InstitutionProvider>
-            </main>
-        </SidebarInset>
-        </SidebarProvider>
+                </main>
+            </SidebarInset>
+            </SidebarProvider>
+        </InstitutionProvider>
     );
 }
 
