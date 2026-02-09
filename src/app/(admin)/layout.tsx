@@ -21,7 +21,7 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { usePathname, redirect } from 'next/navigation';
+import { usePathname, redirect, useSearchParams } from 'next/navigation';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
 import { useUser } from '@/firebase';
 import { useEffect, Suspense } from 'react';
@@ -31,7 +31,18 @@ import { InstitutionProvider } from './institution-context';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const institutionId = searchParams.get('institutionId');
     const isActive = (path: string) => pathname.startsWith(path);
+
+    const createLink = (path: string) => {
+        const params = new URLSearchParams();
+        if (institutionId) {
+            params.set('institutionId', institutionId);
+        }
+        const queryString = params.toString();
+        return `${path}${queryString ? `?${queryString}` : ''}`;
+    }
 
     return (
         <Sidebar>
@@ -44,7 +55,7 @@ const AdminSidebar = () => {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={isActive('/dashboard/reports')} tooltip="Reportes">
-                            <Link href="/dashboard/reports">
+                            <Link href={createLink('/dashboard/reports')}>
                                 <BarChart2 />
                                 <span>Reportes</span>
                             </Link>
@@ -52,7 +63,7 @@ const AdminSidebar = () => {
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={isActive('/dashboard/classrooms')} tooltip="Aulas">
-                            <Link href="/dashboard/classrooms">
+                            <Link href={createLink('/dashboard/classrooms')}>
                                 <School />
                                 <span>Aulas</span>
                             </Link>
@@ -60,7 +71,7 @@ const AdminSidebar = () => {
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={isActive('/dashboard/enrollment')} tooltip="Inscripción">
-                            <Link href="/dashboard/enrollment">
+                            <Link href={createLink('/dashboard/enrollment')}>
                                 <QrCode />
                                 <span>Inscripción</span>
                             </Link>
@@ -116,19 +127,21 @@ function AdminLayoutLoading() {
     )
 }
 
-export default function AdminLayout({
+function AdminLayoutComponent({
   children,
 }: {
   children: React.ReactNode;
 }) {
     const { user, loading, error } = useUser();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         if (!loading && !user && !error) {
-            redirect(`/login?redirect=${pathname}`);
+            const redirectUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}`: ''}`;
+            redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
         }
-    }, [user, loading, error, pathname]);
+    }, [user, loading, error, pathname, searchParams]);
 
     if (loading) {
         return <AdminLayoutLoading />;
@@ -138,23 +151,35 @@ export default function AdminLayout({
         return null;
     }
 
-  return (
-    <SidebarProvider>
-      <AdminSidebar/>
-      <SidebarInset>
-        <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-8">
-            <SidebarTrigger className="md:hidden"/>
-            <div className="hidden font-semibold md:block">Panel de Administración</div>
-            <AdminUserNav/>
-        </header>
-        <main className="flex-1 p-4 md:p-8">
-            <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+    return (
+        <SidebarProvider>
+        <AdminSidebar/>
+        <SidebarInset>
+            <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-8">
+                <SidebarTrigger className="md:hidden"/>
+                <div className="hidden font-semibold md:block">Panel de Administración</div>
+                <AdminUserNav/>
+            </header>
+            <main className="flex-1 p-4 md:p-8">
                 <InstitutionProvider>
                     {children}
                 </InstitutionProvider>
-            </Suspense>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+            </main>
+        </SidebarInset>
+        </SidebarProvider>
+    );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<AdminLayoutLoading />}>
+      <AdminLayoutComponent>
+        {children}
+      </AdminLayoutComponent>
+    </Suspense>
   );
 }
