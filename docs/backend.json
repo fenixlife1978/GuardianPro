@@ -48,9 +48,17 @@
           "type": "string",
           "description": "Denormalized reference to Institution for security rules."
         },
-        "nombre_aula": {
+        "grado": {
           "type": "string",
-          "description": "Name of the classroom or sector."
+          "description": "The grade level of the classroom, e.g., '1er Grado'."
+        },
+        "seccion": {
+          "type": "string",
+          "description": "The section identifier, e.g., 'A', 'B'."
+        },
+        "nombre_completo": {
+          "type": "string",
+          "description": "The full display name, e.g., '1er Grado - Sección A'."
         },
         "capacidad": {
           "type": "number",
@@ -63,7 +71,9 @@
       },
       "required": [
         "institutionId",
-        "nombre_aula",
+        "grado",
+        "seccion",
+        "nombre_completo",
         "isPublished"
       ]
     },

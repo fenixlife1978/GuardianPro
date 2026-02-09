@@ -7,6 +7,7 @@ import {
   Settings,
   Loader2,
   ChevronDown,
+  Building,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -26,37 +27,45 @@ import Link from 'next/link';
 import { usePathname, redirect, useSearchParams } from 'next/navigation';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { useEffect, Suspense } from 'react';
+import { useEffect, Suspense, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Logo } from '@/components/common/logo';
 import { InstitutionProvider, useInstitution } from './institution-context';
-import { collection } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import type { Classroom, Institution } from '@/lib/firestore-types';
 import { DashboardHeader } from '@/components/admin/dashboard-header';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const institutionId = searchParams.get('institutionId');
     const isActive = (path: string) => pathname === path;
     const { institutionId: contextInstitutionId } = useInstitution();
     const firestore = useFirestore();
 
     const createLink = (path: string) => {
-        const params = new URLSearchParams();
-        if (institutionId) {
-            params.set('institutionId', institutionId);
-        }
-        const queryString = params.toString();
-        return `${path}${queryString ? `?${queryString}` : ''}`;
+        const params = new URLSearchParams(searchParams.toString());
+        return `${path}?${params.toString()}`;
     }
 
     const classroomsRef = useMemoFirebase(() => {
         if (!firestore || !contextInstitutionId) return null;
-        return collection(firestore, 'institutions', contextInstitutionId, 'Aulas');
+        return query(collection(firestore, 'institutions', contextInstitutionId, 'Aulas'), orderBy('grado'), orderBy('seccion'));
     }, [firestore, contextInstitutionId]);
 
     const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsRef);
+
+    const groupedClassrooms = useMemo(() => {
+        if (!classrooms) return {};
+        return classrooms.reduce((acc, classroom) => {
+            const { grado } = classroom;
+            if (!acc[grado]) {
+                acc[grado] = [];
+            }
+            acc[grado].push(classroom);
+            return acc;
+        }, {} as Record<string, Classroom[]>);
+    }, [classrooms]);
+
 
     return (
         <Sidebar>
@@ -66,34 +75,38 @@ const AdminSidebar = () => {
               </div>
             </SidebarHeader>
             <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel className='flex justify-between'>
-                        GRADO 1° <ChevronDown size={16} />
-                    </SidebarGroupLabel>
-                    <SidebarMenu>
-                        {classroomsLoading && (
-                            <>
-                                <Skeleton className='h-8 w-full' />
-                                <Skeleton className='h-8 w-full' />
-                            </>
-                        )}
-                        {classrooms?.map(classroom => (
-                            <SidebarMenuItem key={classroom.id}>
-                                <SidebarMenuButton asChild isActive={isActive(`/dashboard/classrooms/${classroom.id}`)} tooltip={classroom.nombre_aula}>
-                                    <Link href={createLink(`/dashboard/classrooms/${classroom.id}`)}>
-                                        <GraduationCap />
-                                        <span>{classroom.nombre_aula}</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
+                {classroomsLoading && (
+                    <div className='p-2 space-y-2'>
+                        <Skeleton className='h-8 w-full' />
+                        <Skeleton className='h-8 w-full' />
+                        <Skeleton className='h-8 w-full' />
+                    </div>
+                )}
+                 {Object.entries(groupedClassrooms).map(([grade, rooms]) => (
+                    <SidebarGroup key={grade}>
+                        <SidebarGroupLabel className='flex justify-between'>
+                            {grade} <ChevronDown size={16} />
+                        </SidebarGroupLabel>
+                        <SidebarMenu>
+                            {rooms.map(classroom => (
+                                <SidebarMenuItem key={classroom.id}>
+                                    <SidebarMenuButton asChild isActive={isActive(`/dashboard/classrooms/${classroom.id}`)} tooltip={classroom.nombre_completo}>
+                                        <Link href={createLink(`/dashboard/classrooms/${classroom.id}`)}>
+                                            <GraduationCap />
+                                            <span>Sección {classroom.seccion}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroup>
+                ))}
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={isActive('/dashboard/classrooms')} tooltip="Aulas">
+                        <SidebarMenuButton asChild isActive={isActive('/dashboard/classrooms')} tooltip="Gestionar Aulas">
                             <Link href={createLink('/dashboard/classrooms')}>
-                                <span>OTRAS AULAS...</span>
+                                <Building />
+                                <span>Gestionar Aulas</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

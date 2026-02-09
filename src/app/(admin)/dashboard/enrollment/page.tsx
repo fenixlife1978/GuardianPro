@@ -122,7 +122,7 @@ export default function EnrollmentPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classrooms?.map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.nombre_aula}</SelectItem>
+                                            <SelectItem key={c.id} value={c.id}>{c.nombre_completo}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

@@ -12,7 +12,9 @@ export interface Institution {
 export interface Classroom {
   id: string;
   institutionId: string;
-  nombre_aula: string;
+  grado: string;
+  seccion: string;
+  nombre_completo: string;
   capacidad?: number;
   isPublished: boolean;
 }
