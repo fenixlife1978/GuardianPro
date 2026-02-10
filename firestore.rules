@@ -44,11 +44,8 @@ service cloud.firestore {
     }
 
     function isMemberOfInstitution(institutionId) {
+      // Regular admins must have an institutionId in their custom claims.
       return isSignedIn() && request.auth.token.institutionId == institutionId;
-    }
-
-    function isInstitutionMemberOrSuperAdmin(institutionId) {
-      return isSuperAdmin() || isMemberOfInstitution(institutionId);
     }
 
     function hasCorrectInstitutionIdOnCreate(institutionId) {
@@ -73,29 +70,35 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get, update: if isSuperAdmin() || request.auth.uid == userId;
-      allow create, delete: if isSuperAdmin();
-      allow list: if isSuperAdmin();
+      allow create, delete, list: if isSuperAdmin();
     }
 
     match /institutions/{institutionId} {
-      allow get: if isInstitutionMemberOrSuperAdmin(institutionId);
+      // Super admin gets full read/write on an institution and ALL its subcollections.
+      allow read, write: if isSuperAdmin();
+
+      // Regular admin can only GET their own institution document.
+      allow get: if isMemberOfInstitution(institutionId);
+      // Listing, creating, updating, or deleting top-level institutions is super-admin only.
       allow list, create, update, delete: if isSuperAdmin();
 
       match /Aulas/{classroomId} {
-        allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId);
-        allow create: if isInstitutionMemberOrSuperAdmin(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId);
-        allow update: if isInstitutionMemberOrSuperAdmin(institutionId) && institutionIdIsImmutable();
-        allow delete: if isInstitutionMemberOrSuperAdmin(institutionId);
+        // Regular members can perform CRUD on classrooms within their institution.
+        // Super admin access is already granted by the rule on /institutions/{institutionId}.
+        allow get, list, delete: if isMemberOfInstitution(institutionId);
+        allow create: if isMemberOfInstitution(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId);
+        allow update: if isMemberOfInstitution(institutionId) && institutionIdIsImmutable();
 
         match /Alumnos/{deviceId} {
-            allow get, list: if isInstitutionMemberOrSuperAdmin(institutionId);
-            allow create: if isInstitutionMemberOrSuperAdmin(institutionId) 
+            // Regular members can perform CRUD on students within their institution.
+            // Super admin access is already granted.
+            allow get, list, delete: if isMemberOfInstitution(institutionId);
+            allow create: if isMemberOfInstitution(institutionId) 
                             && hasCorrectInstitutionIdOnCreate(institutionId)
                             && hasCorrectClassroomIdOnCreate(classroomId);
-            allow update: if isInstitutionMemberOrSuperAdmin(institutionId) 
+            allow update: if isMemberOfInstitution(institutionId) 
                             && institutionIdIsImmutable()
                             && classroomIdIsImmutable();
-            allow delete: if isInstitutionMemberOrSuperAdmin(institutionId);
         }
       }
     }
