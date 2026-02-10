@@ -2,24 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * Core Philosophy:
-     * This ruleset enforces a strict multi-tenant security model. Data is partitioned by
-     * an 'institution', and a user's access is determined by their assigned
-     * 'institutionId' and role (e.g., Super Admin), which are expected to be present
-     * as custom claims in their authentication token. This prevents users from one
-     * institution from accessing the data of another.
-     *
-     * Key Security Decisions:
-     * - Super Admin Override: The Super Admin role grants full read/write access across all 
-     *   institutions. This is checked first in subcollection rules.
-     * - Tenant Isolation: A regular user can only access data within the institution
-     *   specified in their auth token. Listing all institutions is denied to regular users.
-     * - Denormalization for Security: The `institutionId` is denormalized on documents
-     *   within subcollections (e.g., classrooms, devices) to allow rules to validate
-     *   tenant ownership without performing costly `get()` calls.
-     */
-
     //-------------------------------------------------------------------------
     // Helper Functions
     //-------------------------------------------------------------------------
@@ -28,69 +10,67 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // isSuperAdmin is ONLY checked by the global rule below.
     function isSuperAdmin() {
-      // Super admin is defined by a specific UID or a custom claim.
-      return isSignedIn() && (request.auth.uid == 'QeGMDNE4GaSJOU8XEnY3lFJ9by13' || request.auth.token.isSuperAdmin == true);
+      return isSignedIn() && request.auth.uid == 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
     }
 
-    function isMemberOfInstitution(institutionId) {
-      // Regular admins must have an institutionId in their custom claims.
+    // isInstitutionAdmin checks if a regular user is an admin for a specific tenant.
+    // This relies on a custom claim.
+    function isInstitutionAdmin(institutionId) {
       return isSignedIn() && request.auth.token.institutionId == institutionId;
     }
 
-    function hasCorrectInstitutionIdOnCreate(institutionId) {
-        return request.resource.data.institutionId == institutionId;
-    }
-
-    function institutionIdIsImmutable() {
-        return request.resource.data.institutionId == resource.data.institutionId;
-    }
-
-    function hasCorrectClassroomIdOnCreate(classroomId) {
-      return request.resource.data.classroomId == classroomId;
-    }
-
-    function classroomIdIsImmutable() {
-      return request.resource.data.classroomId == resource.data.classroomId;
-    }
 
     //-------------------------------------------------------------------------
-    // Collection Rules
+    // Global Super Admin Rule
     //-------------------------------------------------------------------------
+    
+    // This is the master rule. If the user is the Super Admin, they can do anything.
+    // No other rules will be checked for the Super Admin.
+    match /{path=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+
+    //-------------------------------------------------------------------------
+    // Rules for Regular (Non-Super Admin) Users
+    //-------------------------------------------------------------------------
+    // These rules are only evaluated if the user is NOT a Super Admin.
 
     match /users/{userId} {
-      allow get, update: if isSuperAdmin() || request.auth.uid == userId;
-      allow create, delete, list: if isSuperAdmin();
+      // A regular user can only get or update their own profile.
+      allow get, update: if request.auth.uid == userId;
     }
 
     match /institutions/{institutionId} {
-      // This rule grants access to the institution document itself.
-      allow get: if isSuperAdmin() || isMemberOfInstitution(institutionId);
-      allow list, create, update, delete: if isSuperAdmin();
-
-      // Rules for subcollections must re-evaluate permissions.
-      // A rule on a parent document does NOT automatically grant access to subcollections.
+      // An admin can get their own institution's document.
+      allow get: if isInstitutionAdmin(institutionId);
 
       match /Aulas/{classroomId} {
-        // Super Admins get full access. Regular members are restricted.
-        allow get, list, delete: if isSuperAdmin() || isMemberOfInstitution(institutionId);
-        allow create: if isSuperAdmin() || (isMemberOfInstitution(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId));
-        allow update: if isSuperAdmin() || (isMemberOfInstitution(institutionId) && institutionIdIsImmutable());
+        // An admin can read and delete classrooms in their own institution.
+        allow get, list, delete: if isInstitutionAdmin(institutionId);
+        
+        // An admin can create a classroom if the data contains the correct institutionId.
+        allow create: if isInstitutionAdmin(institutionId) && request.resource.data.institutionId == institutionId;
+        
+        // An admin can update a classroom if the institutionId is not changed.
+        allow update: if isInstitutionAdmin(institutionId) && request.resource.data.institutionId == resource.data.institutionId;
 
         match /Alumnos/{deviceId} {
-            // Super Admins get full access. Regular members are restricted.
-            allow get, list, delete: if isSuperAdmin() || isMemberOfInstitution(institutionId);
-            allow create: if isSuperAdmin() || (isMemberOfInstitution(institutionId) 
-                            && hasCorrectInstitutionIdOnCreate(institutionId)
-                            && hasCorrectClassroomIdOnCreate(classroomId));
-            allow update: if isSuperAdmin() || (isMemberOfInstitution(institutionId) 
-                            && institutionIdIsImmutable()
-                            && classroomIdIsImmutable());
+            // Same logic for devices within classrooms.
+            allow get, list, delete: if isInstitutionAdmin(institutionId);
+            allow create: if isInstitutionAdmin(institutionId) 
+                            && request.resource.data.institutionId == institutionId
+                            && request.resource.data.classroomId == classroomId;
+            allow update: if isInstitutionAdmin(institutionId)
+                            && request.resource.data.institutionId == resource.data.institutionId
+                            && request.resource.data.classroomId == resource.data.classroomId;
         }
       }
     }
     
-    // Temp collection for enrollment flow.
+    // Temp collection for enrollment flow can be used by any signed-in user.
     match /pending_enrollments/{enrollmentId} {
         allow read, write: if isSignedIn();
     }
