@@ -10,25 +10,14 @@ service cloud.firestore {
      * as custom claims in their authentication token. This prevents users from one
      * institution from accessing the data of another.
      *
-     * Data Structure:
-     * The data is organized hierarchically, with top-level 'institutions' collections.
-     * All other data, such as classrooms and devices, are stored in subcollections
-     * under their respective institution. This structure enables clear, path-based
-     * security rules and efficient, tenant-scoped queries.
-     *
      * Key Security Decisions:
-     * - Authorization via UID and Custom Claims: Access is primarily controlled by a specific Super Admin UID
-     *   or custom claims (institutionId, isSuperAdmin) in the user's auth token.
-     * - Super Admin Role: A global Super Admin role is implemented, granting full
-     *   read/write access across all institutions for management purposes.
-     * - Tenant Isolation: The core rule is that a regular user can only access data
-     *   within the institution specified in their auth token. Listing all institutions is
-     *   denied to regular users to prevent information leakage.
-     *
-     * Denormalization for Authorization:
-     * To ensure fast and secure authorization, the `institutionId` is denormalized
-     * and stored on documents within subcollections (e.g., classrooms, devices).
-     * This allows rules to validate tenant ownership without performing costly `get()` calls.
+     * - Super Admin Override: The Super Admin role grants full read/write access across all 
+     *   institutions. This is checked first in subcollection rules.
+     * - Tenant Isolation: A regular user can only access data within the institution
+     *   specified in their auth token. Listing all institutions is denied to regular users.
+     * - Denormalization for Security: The `institutionId` is denormalized on documents
+     *   within subcollections (e.g., classrooms, devices) to allow rules to validate
+     *   tenant ownership without performing costly `get()` calls.
      */
 
     //-------------------------------------------------------------------------
@@ -40,6 +29,7 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
+      // Super admin is defined by a specific UID or a custom claim.
       return isSignedIn() && (request.auth.uid == 'QeGMDNE4GaSJOU8XEnY3lFJ9by13' || request.auth.token.isSuperAdmin == true);
     }
 
@@ -74,39 +64,33 @@ service cloud.firestore {
     }
 
     match /institutions/{institutionId} {
-      // Super admin gets full read/write on an institution and ALL its subcollections.
-      allow read, write: if isSuperAdmin();
-
-      // Regular admin can only GET their own institution document.
-      allow get: if isMemberOfInstitution(institutionId);
-      // Listing, creating, updating, or deleting top-level institutions is super-admin only.
+      // This rule grants access to the institution document itself.
+      allow get: if isSuperAdmin() || isMemberOfInstitution(institutionId);
       allow list, create, update, delete: if isSuperAdmin();
 
+      // Rules for subcollections must re-evaluate permissions.
+      // A rule on a parent document does NOT automatically grant access to subcollections.
+
       match /Aulas/{classroomId} {
-        // Regular members can perform CRUD on classrooms within their institution.
-        // Super admin access is already granted by the rule on /institutions/{institutionId}.
-        allow get, list, delete: if isMemberOfInstitution(institutionId);
-        allow create: if isMemberOfInstitution(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId);
-        allow update: if isMemberOfInstitution(institutionId) && institutionIdIsImmutable();
+        // Super Admins get full access. Regular members are restricted.
+        allow get, list, delete: if isSuperAdmin() || isMemberOfInstitution(institutionId);
+        allow create: if isSuperAdmin() || (isMemberOfInstitution(institutionId) && hasCorrectInstitutionIdOnCreate(institutionId));
+        allow update: if isSuperAdmin() || (isMemberOfInstitution(institutionId) && institutionIdIsImmutable());
 
         match /Alumnos/{deviceId} {
-            // Regular members can perform CRUD on students within their institution.
-            // Super admin access is already granted.
-            allow get, list, delete: if isMemberOfInstitution(institutionId);
-            allow create: if isMemberOfInstitution(institutionId) 
+            // Super Admins get full access. Regular members are restricted.
+            allow get, list, delete: if isSuperAdmin() || isMemberOfInstitution(institutionId);
+            allow create: if isSuperAdmin() || (isMemberOfInstitution(institutionId) 
                             && hasCorrectInstitutionIdOnCreate(institutionId)
-                            && hasCorrectClassroomIdOnCreate(classroomId);
-            allow update: if isMemberOfInstitution(institutionId) 
+                            && hasCorrectClassroomIdOnCreate(classroomId));
+            allow update: if isSuperAdmin() || (isMemberOfInstitution(institutionId) 
                             && institutionIdIsImmutable()
-                            && classroomIdIsImmutable();
+                            && classroomIdIsImmutable());
         }
       }
     }
     
     // Temp collection for enrollment flow.
-    // Allow any authenticated user to create a pending enrollment.
-    // The device itself might be anonymous at this point.
-    // The `confirmEnrollment` function (run by an admin) will securely move the data.
     match /pending_enrollments/{enrollmentId} {
         allow read, write: if isSignedIn();
     }
