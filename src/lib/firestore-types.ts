@@ -43,5 +43,5 @@ export interface PendingEnrollment {
     macAddress: string;
     model: string;
   };
-  createdAt: Timestamp; // Should be a server timestamp
+  timestamp: Timestamp; // Should be a server timestamp
 }
