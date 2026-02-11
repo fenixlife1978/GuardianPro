@@ -5,13 +5,13 @@ import { useInstitution } from '@/app/(admin)/institution-context';
 import { StudentsTable } from '@/components/admin/students-table';
 import { useParams } from 'next/navigation';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { doc, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import type { Classroom, PendingEnrollment } from '@/lib/firestore-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
 import EnrollmentQR from '@/components/admin/EnrollmentQR'; 
 import { useToast } from '@/hooks/use-toast';
-import { EnrollmentModal } from '@/components/admin/enrollment-modal';
+import AssignStudentModal from '@/components/admin/AssignStudentModal';
 
 export default function ClassroomDetailPage() {
     const params = useParams();
@@ -20,13 +20,12 @@ export default function ClassroomDetailPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeEnrollment, setActiveEnrollment] = useState<{ id: string; data: PendingEnrollment } | null>(null);
-    const modalOpenRef = useRef(isModalOpen);
+    const [pendingDevice, setPendingDevice] = useState<any>(null);
+    const modalOpenRef = useRef(!!pendingDevice);
 
     useEffect(() => {
-        modalOpenRef.current = isModalOpen;
-    }, [isModalOpen]);
+        modalOpenRef.current = !!pendingDevice;
+    }, [pendingDevice]);
 
     const classroomRef = useMemoFirebase(() => {
         if (!firestore || !institutionId || !classroomId) return null;
@@ -50,23 +49,12 @@ export default function ClassroomDetailPage() {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added' && !modalOpenRef.current) {
-                    const docData = change.doc.data();
-                    console.log('Nueva tablet detectada:', docData);
-                    
+                    const data = change.doc.data();
+                    setPendingDevice({ ...data, id: change.doc.id });
                     toast({
                         title: "Dispositivo detectado",
                         description: `Un nuevo dispositivo está listo para ser confirmado.`,
                     });
-
-                    // Adapt data for the modal, which expects 'classroomId' and 'createdAt'
-                    const pendingDataForModal: PendingEnrollment = {
-                        classroomId: docData.workingCondoId,
-                        deviceInfo: docData.deviceInfo,
-                        createdAt: docData.timestamp, 
-                    };
-                    
-                    setActiveEnrollment({ id: change.doc.id, data: pendingDataForModal });
-                    setIsModalOpen(true);
                 }
             });
         });
@@ -74,26 +62,16 @@ export default function ClassroomDetailPage() {
         return () => unsubscribe();
     }, [firestore, institutionId, classroomId, toast]);
 
-    const handleEnrollmentConfirmed = () => {
-        setIsModalOpen(false);
-        setActiveEnrollment(null);
-        toast({
-            title: "Éxito",
-            description: "El dispositivo ha sido enrolado y configurado exitosamente.",
-        });
-    }
-
     return (
         <>
-            {institutionId && activeEnrollment && (
-                <EnrollmentModal 
-                    isOpen={isModalOpen}
-                    onOpenChange={setIsModalOpen}
-                    enrollmentId={activeEnrollment.id}
-                    pendingEnrollment={activeEnrollment.data}
-                    onConfirmed={handleEnrollmentConfirmed}
-                    institutionId={institutionId}
-                />
+            {pendingDevice && (
+              <AssignStudentModal 
+                enrollmentId={pendingDevice.id}
+                deviceId={pendingDevice.deviceId}
+                activeId={institutionId!}
+                workingCondoId={classroomId}
+                onClose={() => setPendingDevice(null)}
+              />
             )}
             <div className="space-y-8">
                 <header className="flex justify-between items-center">
