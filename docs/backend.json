@@ -30,6 +30,11 @@
         "superAdminSuspended": {
           "type": "boolean",
           "description": "Indicates whether the institution is suspended by the super admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the institution was created."
         }
       },
       "required": [

@@ -7,6 +7,7 @@ export interface Institution {
   logoUrl?: string;
   modoFiltro: 'Blacklist' | 'Whitelist';
   superAdminSuspended: boolean;
+  createdAt: Timestamp;
 }
 
 export interface Classroom {

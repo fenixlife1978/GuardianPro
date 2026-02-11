@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useFirestore } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -50,6 +50,7 @@ export function CreateInstitutionForm() {
             logoUrl: '',
             modoFiltro: 'Blacklist', // Default value
             superAdminSuspended: false, // Default value
+            createdAt: serverTimestamp(),
         });
 
         toast({ title: 'Éxito', description: `La institución "${values.nombre}" ha sido creada.` });
