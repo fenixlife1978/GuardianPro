@@ -23,7 +23,10 @@ export default function EnrollmentQR({ activeId, workingCondoId }: QRProps) {
 
   return (
     <div className="flex flex-col items-center p-8 bg-white rounded-2xl shadow-xl border border-slate-200">
-      <h3 className="text-lg font-black text-slate-800 mb-4 uppercase italic">Escanear para Inscripción</h3>
+      <div className="mb-4 text-center">
+          <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">EFAS GuardianPro</h3>
+          <h3 className="text-lg font-black text-slate-800 uppercase italic">Escáner de Registro</h3>
+      </div>
       
       <div className="p-4 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
         {qrData && (
@@ -37,7 +40,7 @@ export default function EnrollmentQR({ activeId, workingCondoId }: QRProps) {
       </div>
 
       <div className="mt-6 text-center">
-        <p className="text-xs text-slate-500 font-bold uppercase mb-1">Aula Activa</p>
+        <p className="text-xs text-slate-500 font-bold uppercase mb-1">Sector Activo</p>
         <p className="text-sm text-blue-600 font-mono font-bold">{workingCondoId}</p>
       </div>
       

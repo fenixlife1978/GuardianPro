@@ -21,8 +21,7 @@ const StudentCount = ({ institutionId, classroomId }: { institutionId: string; c
     useEffect(() => {
         const fetchCount = async () => {
             if (!firestore || !institutionId || !classroomId) return;
-            // Corregido: 'Aulas' -> 'classrooms' para coincidir con reglas y ruta
-            const studentsRef = collection(firestore, 'institutions', institutionId, 'classrooms', classroomId, 'Alumnos');
+            const studentsRef = collection(firestore, 'institutions', institutionId, 'Aulas', classroomId, 'Alumnos');
             const snapshot = await getDocs(studentsRef);
             setCount(snapshot.size);
         };
@@ -40,12 +39,11 @@ export default function ClassroomsPage() {
   const firestore = useFirestore();
   const searchParams = useSearchParams();
 
-  // Query corregida para usar la colección 'classrooms' [cite: 2026-01-30]
   const classroomsRef = useMemoFirebase(() => {
     if (!firestore || !institutionId) return null;
     return query(
-        collection(firestore, 'institutions', institutionId, 'classrooms'),
-        orderBy('nombre_completo') // Ajustado ya que 'grado/seccion' podrían no existir aún
+        collection(firestore, 'institutions', institutionId, 'Aulas'),
+        orderBy('nombre_completo')
     );
   }, [firestore, institutionId]);
 
@@ -66,12 +64,16 @@ export default function ClassroomsPage() {
       <div className="space-y-8">
         <header className="flex justify-between items-center">
             <div>
-                <h1 className="text-2xl font-black text-slate-800 tracking-tighter italic">EFAS <span className="text-blue-600">CondoSys</span></h1>
-                <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">Gestión de Aulas e Instituciones</p>
+                <h1 className="text-2xl font-black text-slate-800 tracking-tighter italic">
+                    EFAS <span className="text-blue-600">GuardianPro</span>
+                </h1>
+                <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">
+                    Gestión de Sectores e Instituciones
+                </p>
             </div>
             <Button onClick={() => setIsCreateOpen(true)} className="rounded-xl shadow-lg shadow-blue-200 bg-blue-600 hover:bg-blue-700 flex items-center gap-2 font-bold">
                 <Plus className="w-5 h-5" />
-                Nueva Aula
+                Nuevo Sector
             </Button>
         </header>
 
@@ -99,7 +101,7 @@ export default function ClassroomsPage() {
                     <CardFooter className="flex items-center justify-between pt-4 border-t border-slate-50 bg-slate-50/50">
                         <StudentCount institutionId={institutionId!} classroomId={room.id} />
                         <Button asChild variant="link" className="font-black text-xs p-0 h-auto text-blue-600 hover:text-blue-800 uppercase tracking-tighter">
-                            <Link href={createLink(`/dashboard/admin/classrooms/${room.id}`)}>
+                            <Link href={createLink(`/dashboard/classrooms/${room.id}`)}>
                                 Gestionar &rarr;
                             </Link>
                         </Button>
@@ -111,8 +113,8 @@ export default function ClassroomsPage() {
         {!isLoading && (!classrooms || classrooms.length === 0) && (
             <div className="col-span-full flex flex-col items-center justify-center h-full text-center p-12 border-4 border-dashed border-slate-100 rounded-3xl mt-12 bg-white">
                 <Building className="h-20 w-20 mb-4 text-slate-200" />
-                <h2 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">Sin aulas configuradas</h2>
-                <p className="text-slate-400 font-medium max-w-xs mx-auto">Comienza creando tu primer aula para asignar dispositivos y alumnos.</p>
+                <h2 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">Sin sectores configurados</h2>
+                <p className="text-slate-400 font-medium max-w-xs mx-auto">Comienza creando tu primer sector para asignar dispositivos y alumnos.</p>
             </div>
         )}
       </div>
