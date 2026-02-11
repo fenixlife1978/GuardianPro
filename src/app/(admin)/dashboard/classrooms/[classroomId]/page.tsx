@@ -42,8 +42,7 @@ export default function ClassroomDetailPage() {
         const q = query(
             collection(firestore, 'pending_enrollments'),
             where('activeId', '==', institutionId),
-            where('workingCondoId', '==', classroomId),
-            orderBy('timestamp', 'desc')
+            where('workingCondoId', '==', classroomId)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
