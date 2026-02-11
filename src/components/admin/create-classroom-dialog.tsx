@@ -133,7 +133,13 @@ export function CreateClassroomDialog({
                 <FormItem>
                   <FormLabel className="block text-xs font-black text-slate-400 uppercase mb-2">Cantidad de Estudiantes (Opcional)</FormLabel>
                   <FormControl>
-                    <Input type="number" className="bg-slate-50 border-slate-200 p-4 h-auto rounded-xl" placeholder="Ej: 30" {...field} />
+                    <Input
+                      type="number"
+                      className="bg-slate-50 border-slate-200 p-4 h-auto rounded-xl"
+                      placeholder="Ej: 30"
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
