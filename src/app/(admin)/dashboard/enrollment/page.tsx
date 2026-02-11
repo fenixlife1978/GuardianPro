@@ -14,6 +14,7 @@ import { collection, doc } from 'firebase/firestore';
 import { EnrollmentModal } from '@/components/admin/enrollment-modal';
 import type { PendingEnrollment, Classroom } from '@/lib/firestore-types';
 import { useInstitution } from '../../institution-context';
+import { AdminUserNav } from '@/components/common/admin-user-nav';
 
 export default function EnrollmentPage() {
     const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null);
@@ -99,10 +100,13 @@ export default function EnrollmentPage() {
                 institutionId={institutionId!}
             />
 
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Inscripción de Dispositivos</h2>
-                <p className="text-muted-foreground">Genera un código QR para que un nuevo dispositivo se una a un aula.</p>
-            </div>
+            <header className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-black text-slate-800">Inscripción de Dispositivos</h2>
+                    <p className="text-slate-500 text-sm">Genera un código QR para que un nuevo dispositivo se una a un aula.</p>
+                </div>
+                <AdminUserNav />
+            </header>
 
             <Card className="max-w-md mx-auto">
                 <CardHeader>

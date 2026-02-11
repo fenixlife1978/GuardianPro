@@ -10,13 +10,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -92,23 +90,20 @@ export function CreateClassroomDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Crear Nueva Aula</DialogTitle>
-          <DialogDescription>
-            Define el grado y la sección para una nueva aula.
-          </DialogDescription>
+      <DialogContent className="sm:max-w-md rounded-3xl p-8">
+        <DialogHeader className="mb-2">
+          <DialogTitle className="text-2xl font-black text-slate-800">Configurar Nueva Aula</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="grado"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Grado</FormLabel>
+                  <FormLabel className="block text-xs font-black text-slate-400 uppercase mb-2">Grado (Ej: 1er Grado, Nivel Inicial)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ej: 1er Grado, Nivel Inicial" {...field} />
+                    <Input className="bg-slate-50 border-slate-200 p-4 h-auto rounded-xl" placeholder="Grado al que pertenece el aula" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,9 +114,9 @@ export function CreateClassroomDialog({
               name="seccion"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Sección</FormLabel>
+                  <FormLabel className="block text-xs font-black text-slate-400 uppercase mb-2">Identificación del Aula (Ej: "A")</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ej: A, B, Única" {...field} />
+                    <Input className="bg-slate-50 border-slate-200 p-4 h-auto rounded-xl" placeholder="Nombre o Letra del Aula" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -132,19 +127,19 @@ export function CreateClassroomDialog({
               name="capacidad"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Capacidad de Alumnos (Opcional)</FormLabel>
+                  <FormLabel className="block text-xs font-black text-slate-400 uppercase mb-2">Cantidad de Estudiantes (Opcional)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Ej: 30" {...field} />
+                    <Input type="number" className="bg-slate-50 border-slate-200 p-4 h-auto rounded-xl" placeholder="Ej: 30" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            <DialogFooter className="!flex-row gap-3 pt-4">
+                <Button type="button" variant="ghost" className="flex-1 h-auto py-4 font-bold text-slate-400 hover:bg-slate-100 rounded-xl" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                     Cancelar
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" className="flex-1 h-auto py-4 font-bold rounded-xl shadow-lg shadow-blue-200" disabled={isSubmitting}>
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isSubmitting ? 'Creando...' : 'Crear Aula'}
                 </Button>
