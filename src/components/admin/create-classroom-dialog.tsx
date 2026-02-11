@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -74,7 +74,8 @@ export function CreateClassroomDialog({
             seccion: values.seccion,
             capacidad: values.capacidad || null,
             nombre_completo,
-            isPublished: true, // Default to published
+            status: 'published', // Default to published
+            createdAt: serverTimestamp(),
         });
 
         toast({ title: 'Éxito', description: `El aula "${nombre_completo}" ha sido creada.` });

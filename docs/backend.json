@@ -69,9 +69,18 @@
           "type": "number",
           "description": "Student capacity of the classroom (optional)."
         },
-        "isPublished": {
-          "type": "boolean",
-          "description": "Syncs with RTDB to activate/deactivate restrictions for the classroom."
+        "status": {
+          "type": "string",
+          "enum": [
+            "published",
+            "draft"
+          ],
+          "description": "The publication status of the classroom."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the classroom was created."
         }
       },
       "required": [
@@ -79,7 +88,7 @@
         "grado",
         "seccion",
         "nombre_completo",
-        "isPublished"
+        "status"
       ]
     },
     "Alumno": {

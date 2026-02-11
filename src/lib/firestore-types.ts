@@ -17,7 +17,8 @@ export interface Classroom {
   seccion: string;
   nombre_completo: string;
   capacidad?: number;
-  isPublished: boolean;
+  status: 'published' | 'draft';
+  createdAt?: Timestamp;
 }
 
 export interface Alumno {
