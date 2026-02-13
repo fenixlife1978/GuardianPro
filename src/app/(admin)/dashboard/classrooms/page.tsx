@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import type { Classroom } from '@/lib/firestore-types';
 import { Button } from '@/components/ui/button';
-import { Plus, Building, Loader2, School } from 'lucide-react';
+import { Building, Loader2, School } from 'lucide-react';
 import { CreateClassroomDialog } from '@/components/admin/create-classroom-dialog';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -62,19 +62,18 @@ export default function ClassroomsPage() {
         institutionId={institutionId!} 
       />
       <div className="space-y-8">
-        <header className="flex justify-between items-center">
+        <header className="flex justify-between items-center mb-8">
             <div>
-                <h1 className="text-2xl font-black tracking-tighter italic">
-                  <span className="text-slate-950">EFAS</span>{' '}
+                <h1 className="text-3xl font-black tracking-tighter italic leading-none">
+                  <span className="text-slate-900">EFAS</span>{' '}
                   <span className="text-orange-500">ServiControlPro</span>
                 </h1>
-                <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">
-                    Gestión de Sectores e Instituciones
+                <p className="text-slate-500 text-sm font-bold mt-1">
+                  Servidor Web para Control Parental Multi-Usuarios
                 </p>
             </div>
-            <Button onClick={() => setIsCreateOpen(true)} className="rounded-xl shadow-lg shadow-blue-200 bg-blue-600 hover:bg-blue-700 flex items-center gap-2 font-bold">
-                <Plus className="w-5 h-5" />
-                Nuevo Sector
+            <Button onClick={() => setIsCreateOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6 py-6 shadow-lg shadow-blue-200">
+                + Nuevo Sector
             </Button>
         </header>
 
