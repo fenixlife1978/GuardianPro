@@ -3,8 +3,8 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 
-const APP_NAME = "GuardianPro";
-const APP_DESCRIPTION = "Sistema de monitoreo infantil y escolar.";
+const APP_NAME = "EFAS ServiControlPro";
+const APP_DESCRIPTION = "Servidor Web para Control Parental Multi-Usuarios.";
 
 export const metadata: Metadata = {
   title: {

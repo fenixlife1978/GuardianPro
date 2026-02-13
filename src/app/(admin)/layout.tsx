@@ -5,7 +5,6 @@ import {
   ShieldX,
   Building,
   Home,
-  ShieldCheck
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -28,6 +27,7 @@ import { InstitutionProvider, useInstitution } from './institution-context';
 import { doc } from 'firebase/firestore';
 import type { Institution } from '@/lib/firestore-types';
 import { AdminUserNav } from '@/components/common/admin-user-nav';
+import { Logo } from '@/components/common/logo';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
@@ -53,13 +53,8 @@ const AdminSidebar = () => {
     return (
         <Sidebar>
             <SidebarHeader>
-              <div className="flex items-center gap-3 px-6 py-8">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <ShieldCheck className="text-white w-6 h-6" />
-                </div>
-                <span className="text-white text-xl font-black italic tracking-tighter">
-                  ServiControl<span className="text-orange-500">Pro</span>
-                </span>
+              <div className="px-4 py-6 text-white">
+                <Logo />
               </div>
             </SidebarHeader>
             <SidebarContent className='p-4'>

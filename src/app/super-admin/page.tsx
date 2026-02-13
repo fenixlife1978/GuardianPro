@@ -7,6 +7,7 @@ import { useUser, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { InstitutionList } from '@/components/super-admin/institution-list';
 import { Loader2, LogOut } from 'lucide-react';
+import { Logo } from '@/components/common/logo';
 
 export default function SuperAdminDashboard() {
   const { user, loading } = useUser();
@@ -44,7 +45,7 @@ export default function SuperAdminDashboard() {
     <div className="min-h-screen bg-[#050510] text-white p-8">
       <div className="flex justify-between items-center mb-10">
         <div>
-            <h1 className="text-3xl font-extrabold tracking-tighter text-blue-500 italic">GUARDIANPRO</h1>
+            <Logo />
             <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">
                 Super Admin: <span className="text-slate-300">{user.email}</span>
             </p>
