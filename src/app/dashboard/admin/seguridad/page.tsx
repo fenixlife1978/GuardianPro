@@ -4,7 +4,7 @@ import { useInstitution } from '@/app/(admin)/institution-context';
 import FilterConfig from '@/components/admin/FilterConfig';
 import { ShieldAlert, ShieldCheck, Lock } from 'lucide-react';
 
-export default function SeguridadPage() {
+export default function SecurityPage() {
   const { institutionId } = useInstitution();
 
   if (!institutionId) {
@@ -75,7 +75,7 @@ export default function SeguridadPage() {
               </li>
               <li className="text-xs text-blue-700 font-bold flex gap-2">
                 <span className="bg-blue-200 w-4 h-4 rounded-full flex items-center justify-center text-[10px]">3</span>
-                La tablet bloquea el acceso mediante el Agente GuardianPro.
+                La tablet bloquea el acceso mediante el Agente EFAS ServiControlPro.
               </li>
             </ul>
           </div>

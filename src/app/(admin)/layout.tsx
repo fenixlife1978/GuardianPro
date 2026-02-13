@@ -2,9 +2,10 @@
 
 import {
   Users,
-  ShieldX,
+  ShieldCheck,
   Building,
   Home,
+  ShieldX,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -20,41 +21,37 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname, redirect, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useEffect, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { InstitutionProvider, useInstitution } from './institution-context';
-import { doc } from 'firebase/firestore';
-import type { Institution } from '@/lib/firestore-types';
-import { AdminUserNav } from '@/components/common/admin-user-nav';
-import { Logo } from '@/components/common/logo';
+import { InstitutionProvider } from './institution-context';
+import { DashboardHeader } from '@/components/admin/dashboard-header';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { user } = useUser();
-    const { institutionId } = useInstitution();
-    const firestore = useFirestore();
 
     const isActive = (path: string) => pathname.startsWith(path);
 
     const createLink = (path: string) => {
         const params = new URLSearchParams(searchParams.toString());
+        if (!params.has('institutionId') && user?.uid !== 'QeGMDNE4GaSJOU8XEnY3lFJ9by13') {
+            // This case should be handled by InstitutionProvider, but as a fallback
+        }
         return `${path}?${params.toString()}`;
     }
-
-    const institutionRef = useMemoFirebase(() => {
-        if (!firestore || !institutionId) return null;
-        return doc(firestore, 'institutions', institutionId);
-    }, [firestore, institutionId]);
-
-    const { data: institution, isLoading: institutionLoading } = useDoc<Institution>(institutionRef);
 
     return (
         <Sidebar>
             <SidebarHeader>
-              <div className="px-4 py-6 text-white">
-                <Logo />
+              <div className="flex items-center gap-3 px-6 py-8">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <ShieldCheck className="text-white w-6 h-6" />
+                </div>
+                <span className="text-white text-xl font-black italic tracking-tighter">
+                  ServiControl<span className="text-orange-500">Pro</span>
+                </span>
               </div>
             </SidebarHeader>
             <SidebarContent className='p-4'>
@@ -67,7 +64,7 @@ const AdminSidebar = () => {
                         >
                             <Link href={createLink('/dashboard/classrooms')}>
                                 <Building />
-                                <span>Aulas</span>
+                                <span>Sectores</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -84,8 +81,8 @@ const AdminSidebar = () => {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild href="#" className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400">
-                            <Link href="#">
+                        <SidebarMenuButton asChild isActive={isActive('/dashboard/security')} className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400">
+                            <Link href={createLink('/dashboard/security')}>
                                 <ShieldX />
                                 <span>Filtros URL</span>
                             </Link>
@@ -96,11 +93,7 @@ const AdminSidebar = () => {
             <SidebarFooter className='border-t border-sidebar-border/50 p-6 space-y-6'>
                  <div className='space-y-2'>
                     <p className="text-[10px] text-slate-500 uppercase font-black">Institución activa</p>
-                    {institutionLoading ? (
-                        <Skeleton className="h-4 w-32 bg-sidebar-accent" />
-                    ) : (
-                        <p className="text-xs text-blue-400 font-bold truncate">{institution?.nombre || 'N/A'}</p>
-                    )}
+                    {/* Institution name is now in the global header */}
                  </div>
                  {user?.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13' && (
                      <SidebarMenu>
@@ -168,11 +161,10 @@ function AdminLayoutComponent({
             <SidebarProvider>
                 <AdminSidebar/>
                 <SidebarInset>
+                    <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b">
+                      <DashboardHeader />
+                    </header>
                     <main className="flex-1 p-8 overflow-y-auto">
-                        <div className="md:hidden flex justify-between items-center mb-4">
-                            <SidebarTrigger/>
-                            <AdminUserNav/>
-                        </div>
                         {children}
                     </main>
                 </SidebarInset>

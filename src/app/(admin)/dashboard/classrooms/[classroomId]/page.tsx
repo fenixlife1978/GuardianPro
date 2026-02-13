@@ -8,7 +8,6 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import type { Classroom, PendingEnrollment } from '@/lib/firestore-types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AdminUserNav } from '@/components/common/admin-user-nav';
 import EnrollmentQR from '@/components/admin/EnrollmentQR'; 
 import { useToast } from '@/hooks/use-toast';
 import AssignStudentModal from '@/components/admin/AssignStudentModal';
@@ -41,8 +40,8 @@ export default function ClassroomDetailPage() {
         // Escuchamos la colección de inscripciones pendientes
         const q = query(
             collection(firestore, 'pending_enrollments'),
-            where('activeId', '==', institutionId),
-            where('workingCondoId', '==', classroomId),
+            where('institutionId', '==', institutionId),
+            where('classroomId', '==', classroomId),
             orderBy('timestamp', 'desc')
         );
 
@@ -67,7 +66,7 @@ export default function ClassroomDetailPage() {
             {pendingDevice && (
               <AssignStudentModal 
                 enrollmentId={pendingDevice.id}
-                deviceId={pendingDevice.deviceId}
+                deviceId={pendingDevice.deviceInfo.macAddress}
                 activeId={institutionId!}
                 workingCondoId={classroomId}
                 onClose={() => setPendingDevice(null)}
@@ -83,13 +82,10 @@ export default function ClassroomDetailPage() {
                             </>
                         ) : (
                             <>
-                                <h1 className="text-2xl font-black text-slate-800">{classroom?.nombre_completo || 'Aula'}</h1>
-                                <p className="text-slate-500 text-sm">Gestiona los alumnos y dispositivos de esta aula.</p>
+                                <h1 className="text-2xl font-black text-slate-800">{classroom?.nombre_completo || 'Sector'}</h1>
+                                <p className="text-slate-500 text-sm">Gestiona los alumnos y dispositivos de este sector.</p>
                             </>
                         )}
-                    </div>
-                    <div className='flex items-center gap-4'>
-                        <AdminUserNav />
                     </div>
                 </header>
 

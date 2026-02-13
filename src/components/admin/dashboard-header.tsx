@@ -4,9 +4,9 @@ import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import type { Institution } from "@/lib/firestore-types";
-import { Button } from "../ui/button";
-import { Calendar, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { AdminUserNav } from "../common/admin-user-nav";
+import { SidebarTrigger } from "../ui/sidebar";
+import { Logo } from "../common/logo";
 
 export function DashboardHeader() {
   const { institutionId } = useInstitution();
@@ -19,22 +19,27 @@ export function DashboardHeader() {
 
   const { data: institution, isLoading } = useDoc<Institution>(institutionRef);
 
-  const today = format(new Date(), 'dd / MM / yyyy');
-
   return (
-    <div className="flex-1 flex items-center justify-between">
-      {isLoading ? (
-        <Skeleton className="h-6 w-72" />
-      ) : (
-        <h2 className="text-xl font-bold uppercase tracking-wider text-foreground">
-          {institution?.nombre || 'Institución no encontrada'}
-        </h2>
-      )}
-      <div className="hidden md:flex items-center gap-2">
-        <Button variant="outline" className="h-9 gap-2">
-            <span>{today}</span>
-            <Clock className="h-4 w-4" />
-        </Button>
+    <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-4">
+          <div className="md:hidden">
+              <SidebarTrigger/>
+          </div>
+          <div className="hidden md:block">
+            {isLoading ? (
+              <Skeleton className="h-6 w-72" />
+            ) : (
+              <h2 className="text-base font-bold uppercase tracking-wider text-foreground">
+                {institution?.nombre || 'Institución no encontrada'}
+              </h2>
+            )}
+          </div>
+          <div className="md:hidden">
+            <Logo />
+          </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <AdminUserNav />
       </div>
     </div>
   );

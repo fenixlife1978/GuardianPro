@@ -24,7 +24,7 @@ export default function EnrollmentQR({ activeId, workingCondoId }: QRProps) {
   return (
     <div className="flex flex-col items-center p-8 bg-white rounded-2xl shadow-xl border border-slate-200">
       <div className="mb-4 text-center">
-          <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">EFAS GuardianPro</h3>
+          <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">EFAS ServiControlPro</h3>
           <h3 className="text-lg font-black text-slate-800 uppercase italic">Escáner de Registro</h3>
       </div>
       

@@ -47,7 +47,7 @@ export default function FilterConfig({ activeId }: { activeId: string }) {
       
       toast({ 
         title: "Sincronización Exitosa", 
-        description: "Los filtros de EFAS GuardianPro se han actualizado en todas las tablets." 
+        description: "Los filtros de EFAS ServiControlPro se han actualizado en todas las tablets." 
       });
     } catch (e) {
       console.error(e);
