@@ -64,8 +64,9 @@ export default function ClassroomsPage() {
       <div className="space-y-8">
         <header className="flex justify-between items-center">
             <div>
-                <h1 className="text-2xl font-black text-slate-800 tracking-tighter italic">
-                    EFAS <span className="text-blue-600">GuardianPro</span>
+                <h1 className="text-2xl font-black tracking-tighter italic">
+                  <span className="text-slate-950">EFAS</span>{' '}
+                  <span className="text-orange-500">ServiControlPro</span>
                 </h1>
                 <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">
                     Gestión de Sectores e Instituciones
