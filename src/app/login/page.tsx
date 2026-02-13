@@ -35,19 +35,40 @@ export default function LoginPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (!userLoading && user) {
-      const isSuperAdmin = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
-      const redirectUrl = searchParams.get('redirect');
-      
-      if (redirectUrl) {
-          router.push(redirectUrl);
-      } else if (isSuperAdmin) {
-        router.push('/super-admin');
-      } else {
-        router.push('/dashboard');
+    const handleRedirect = async () => {
+      if (!userLoading && user && firestore) {
+        setLoading(true); // Show loader during async redirect logic
+        const isSuperAdmin = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
+        const redirectUrl = searchParams.get('redirect');
+
+        if (isSuperAdmin) {
+          router.push(redirectUrl || '/super-admin');
+          return;
+        }
+
+        // For regular admins, fetch their institutionId
+        try {
+          const userDocRef = doc(firestore, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists() && userDocSnap.data().institutionId) {
+            const institutionId = userDocSnap.data().institutionId;
+            const finalRedirectUrl = new URL(redirectUrl || '/dashboard', window.location.origin);
+            finalRedirectUrl.searchParams.set('institutionId', institutionId);
+            router.push(finalRedirectUrl.pathname + finalRedirectUrl.search);
+          } else {
+            if (auth) await auth.signOut();
+            setError('Tu cuenta de administrador no está asociada a ninguna institución.');
+            setLoading(false);
+          }
+        } catch (e) {
+          if (auth) await auth.signOut();
+          setError('No se pudo verificar la información de tu institución.');
+          setLoading(false);
+        }
       }
-    }
-  }, [user, userLoading, router, searchParams]);
+    };
+    handleRedirect();
+  }, [user, userLoading, firestore, auth, router, searchParams]);
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -61,45 +82,45 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+      const isSuperAdmin = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
       
       toast({
         title: 'Inicio de Sesión Exitoso',
         description: 'Redirigiendo a tu panel...',
       });
       
-      const isSuperAdminByClaim = idTokenResult.claims.isSuperAdmin === true;
-      const isSuperAdminByUID = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
-      const isSuperAdmin = isSuperAdminByClaim || isSuperAdminByUID;
-
+      // Super Admin Flow
       if (isSuperAdmin) {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (!userDocSnap.exists()) {
-            try {
-                await setDoc(userDocRef, {
-                    id: user.uid,
-                    email: user.email,
-                    role: 'superAdmin',
-                    displayName: user.email?.split('@')[0] || 'Super Admin'
-                });
-            } catch (e) {
-                console.error("Error creating super admin profile:", e);
-                // Non-blocking error, login flow should continue
-            }
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                role: 'superAdmin',
+                displayName: user.email?.split('@')[0] || 'Super Admin'
+            });
         }
+        router.push('/super-admin');
+        return; // Exit function, redirection is happening
       }
 
-      const redirectUrl = searchParams.get('redirect');
+      // Institution Admin Flow
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-      // The useEffect will handle redirection, but we can push here for faster navigation
-      // after a direct login action. The useEffect handles the case where a user lands on the page already logged in.
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else if (isSuperAdmin) {
-        router.push('/super-admin');
+      if (userDocSnap.exists() && userDocSnap.data().institutionId) {
+          const institutionId = userDocSnap.data().institutionId;
+          const redirectUrl = searchParams.get('redirect');
+          
+          const finalRedirectUrl = new URL(redirectUrl || '/dashboard', window.location.origin);
+          finalRedirectUrl.searchParams.set('institutionId', institutionId);
+          router.push(finalRedirectUrl.pathname + finalRedirectUrl.search);
+          
       } else {
-        router.push('/dashboard');
+          setError('Tu cuenta de administrador no está asociada a ninguna institución. Contacta al superadministrador.');
+          if (auth) await auth.signOut();
+          setLoading(false);
       }
 
     } catch (err: any) {
@@ -112,13 +133,11 @@ export default function LoginPage() {
         friendlyMessage = 'El formato del email no es válido.';
       }
       setError(friendlyMessage);
-      setLoading(false); // Only set loading to false on error
-    } 
-    // No finally block, so loading state persists during redirection
+      setLoading(false);
+    }
   };
   
-  // Show a loading spinner while checking for user auth state, or if a user is found and we are about to redirect.
-  if (userLoading || user) {
+  if (userLoading || (user && loading)) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
