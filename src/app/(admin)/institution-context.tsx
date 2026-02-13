@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Loader2, Terminal } from 'lucide-react';
@@ -21,6 +21,7 @@ export const InstitutionProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
@@ -30,45 +31,64 @@ export const InstitutionProvider = ({ children }: { children: ReactNode }) => {
       setError(null);
       const idFromParams = searchParams.get('institutionId');
 
-      // Case 1: Super admin or anyone is navigating with a specific institutionId in the URL.
-      // This is the primary way to identify the institution.
-      if (idFromParams) {
-        setInstitutionId(idFromParams);
+      if (userLoading) {
+        return; // Wait until user loading is complete
+      }
+      
+      if (!user || !firestore) {
         setLoading(false);
-        return; // Exit successfully.
+        // If not logged in, they will be redirected by the layout, so we just wait.
+        return;
       }
 
-      // If we reach here, it means no institutionId was in the URL.
-      // Now, we handle other cases.
-      if (user && firestore) {
-        // Case 2: The Super Admin is accessing /dashboard directly *without* an institutionId param.
-        // This is an error because the super admin must always specify which institution to manage.
-        if (user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13') {
-             setError('No se ha especificado una institución.');
+      const isSuperAdmin = user.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13';
+
+      // Case 1: Super admin can view any institution specified in the URL.
+      if (isSuperAdmin) {
+        if (idFromParams) {
+          setInstitutionId(idFromParams);
         } else {
-            // Case 3: A regular admin user is accessing /dashboard directly.
-            // We need to fetch their assigned institutionId from their user profile.
-            try {
-              const userDocRef = doc(firestore, 'users', user.uid);
-              const userDocSnap = await getDoc(userDocRef);
-              if (userDocSnap.exists() && userDocSnap.data().institutionId) {
-                setInstitutionId(userDocSnap.data().institutionId);
-              } else {
-                setError('Tu cuenta de administrador no está asociada a ninguna institución.');
-              }
-            } catch (e) {
-              console.error("Error fetching user's institution:", e);
-              setError('No se pudo verificar la información de tu institución.');
-            }
+          // Super admin must specify which institution to manage when at /dashboard.
+          setError('No se ha especificado una institución.');
         }
+        setLoading(false);
+        return;
       }
+
+      // Case 2: Regular admin user. We must verify their permissions.
+      try {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists() && userDocSnap.data().institutionId) {
+          const assignedInstitutionId = userDocSnap.data().institutionId;
+
+          // If a specific institution is requested in the URL...
+          if (idFromParams) {
+            // ...it MUST match the admin's assigned institution.
+            if (idFromParams !== assignedInstitutionId) {
+              router.push('/dashboard/unauthorized');
+              // Don't set loading to false; the redirect will unmount this.
+              return; 
+            }
+          }
+          
+          // If we reach here, the access is valid. Set the institution ID to the one they are assigned.
+          // This covers both cases: URL param matches, or no URL param was provided.
+          setInstitutionId(assignedInstitutionId);
+
+        } else {
+          setError('Tu cuenta de administrador no está asociada a ninguna institución.');
+        }
+      } catch (e) {
+        console.error("Error fetching user's institution:", e);
+        setError('No se pudo verificar la información de tu institución.');
+      }
+      
       setLoading(false);
     };
 
-    if (!userLoading) {
-      fetchInstitutionId();
-    }
-  }, [searchParams, user, userLoading, firestore]);
+    fetchInstitutionId();
+  }, [searchParams, user, userLoading, firestore, router]);
 
   if (loading || userLoading) {
     return (
