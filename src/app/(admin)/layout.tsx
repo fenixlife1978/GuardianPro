@@ -6,6 +6,10 @@ import {
   Building,
   Home,
   ShieldX,
+  School,
+  Settings,
+  Download,
+  Shield,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -27,86 +31,91 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { InstitutionProvider } from './institution-context';
 import { DashboardHeader } from '@/components/admin/dashboard-header';
 import { Logo } from '@/components/common/logo';
+import { cn } from '@/lib/utils';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { user } = useUser();
 
-    const isActive = (path: string) => pathname.startsWith(path);
-
     const createLink = (path: string) => {
         const params = new URLSearchParams(searchParams.toString());
-        if (!params.has('institutionId') && user?.uid !== 'QeGMDNE4GaSJOU8XEnY3lFJ9by13') {
-            // This case should be handled by InstitutionProvider, but as a fallback
-        }
         return `${path}?${params.toString()}`;
     }
 
+    const menuItems = [
+      { 
+        label: "Sectores", 
+        href: "/dashboard/classrooms", 
+        icon: <School className="w-5 h-5" /> 
+      },
+      { 
+        label: "Filtros URL", 
+        href: `/dashboard/seguridad`, 
+        icon: <ShieldCheck className="w-5 h-5" /> 
+      },
+      { 
+        label: "Configuración", 
+        href: "/dashboard/settings", 
+        icon: <Settings className="w-5 h-5" /> 
+      },
+    ];
+
     return (
         <Sidebar>
-            <SidebarHeader>
-              <div className="flex items-center gap-3 px-6 py-8">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <ShieldCheck className="text-white w-6 h-6" />
+            <SidebarHeader className="border-b border-sidebar-border/50">
+              <div className="flex flex-col items-center gap-2 px-6 py-10">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-blue-950 rounded-full blur opacity-25 group-hover:opacity-40 transition"></div>
+                  <div className="relative w-[60px] h-[60px] bg-slate-800 rounded-full border-2 border-white/10 flex items-center justify-center">
+                    <Shield className="w-8 h-8 text-orange-500" />
+                  </div>
                 </div>
-                <span className="text-white text-xl font-black italic tracking-tighter">
-                  ServiControl<span className="text-orange-500">Pro</span>
-                </span>
+                <div className="text-center mt-2">
+                  <h1 className="text-xl font-black italic tracking-tighter leading-none text-white">
+                    EFAS <span className="text-orange-500">ServiControlPro</span>
+                  </h1>
+                  <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.1em] mt-1">
+                    Control Parental Multi-Usuarios
+                  </p>
+                </div>
               </div>
             </SidebarHeader>
+
             <SidebarContent className='p-4'>
                 <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton 
-                            asChild 
-                            isActive={isActive('/dashboard/classrooms')} 
-                            className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400"
-                        >
-                            <Link href={createLink('/dashboard/classrooms')}>
-                                <Building />
-                                <span>Sectores</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton 
-                            asChild 
-                            isActive={isActive('/dashboard/reports')} 
-                            className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400"
-                        >
-                            <Link href={createLink('/dashboard/reports')}>
-                                <Users />
-                                <span>Alumnos</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={isActive('/dashboard/seguridad')} className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400">
-                            <Link href={createLink('/dashboard/seguridad')}>
-                                <ShieldX />
-                                <span>Filtros URL</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter className='border-t border-sidebar-border/50 p-6 space-y-6'>
-                 <div className='space-y-2'>
-                    <p className="text-[10px] text-slate-500 uppercase font-black">Institución activa</p>
-                    {/* Institution name is now in the global header */}
-                 </div>
-                 {user?.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13' && (
-                     <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip="Panel Super Admin" className="p-3 rounded-xl font-bold">
-                                <Link href="/super-admin">
-                                    <Home />
-                                    <span>Panel Maestro</span>
+                    {menuItems.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton 
+                                asChild 
+                                isActive={pathname.startsWith(item.href)} 
+                                className="justify-start gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group data-[active=true]:bg-orange-500 data-[active=true]:text-white data-[active=true]:shadow-lg data-[active=true]:shadow-orange-500/20 text-slate-400 hover:bg-white/5 hover:text-white"
+                            >
+                                <Link href={createLink(item.href)}>
+                                    <span className={cn(
+                                      "transition-colors text-slate-500 group-hover:text-orange-400",
+                                      pathname.startsWith(item.href) && "text-white"
+                                    )}>
+                                      {item.icon}
+                                    </span>
+                                    <span>{item.label}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                    </SidebarMenu>
+                    ))}
+                </SidebarMenu>
+            </SidebarContent>
+
+            <SidebarFooter className='border-t border-sidebar-border/50 p-4'>
+                 {user?.uid === 'QeGMDNE4GaSJOU8XEnY3lFJ9by13' && (
+                     <div className="bg-sidebar-accent rounded-2xl p-4">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Super Admin</p>
+                        <p className="text-[11px] font-bold text-slate-300 mt-1 truncate">{user.email}</p>
+                        <button className="w-full mt-4 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-orange-400 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all">
+                            <Download className="w-3 h-3" />
+                            Instalar App
+                        </button>
+                    </div>
                  )}
             </SidebarFooter>
         </Sidebar>
