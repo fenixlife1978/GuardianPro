@@ -82,8 +82,8 @@ const AdminSidebar = () => {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={isActive('/dashboard/security')} className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400">
-                            <Link href={createLink('/dashboard/security')}>
+                        <SidebarMenuButton asChild isActive={isActive('/dashboard/seguridad')} className="p-3 rounded-xl font-bold data-[active=true]:bg-primary/10 data-[active=true]:text-blue-400">
+                            <Link href={createLink('/dashboard/seguridad')}>
                                 <ShieldX />
                                 <span>Filtros URL</span>
                             </Link>
