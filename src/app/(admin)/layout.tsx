@@ -26,6 +26,7 @@ import { useEffect, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InstitutionProvider } from './institution-context';
 import { DashboardHeader } from '@/components/admin/dashboard-header';
+import { Logo } from '@/components/common/logo';
 
 const AdminSidebar = () => {
     const pathname = usePathname();
