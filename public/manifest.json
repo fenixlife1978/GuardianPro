@@ -1,9 +1,23 @@
 {
-  "name": "EFAS EduGuard Pro",
-  "short_name": "EduGuard",
-  "description": "Sistema de monitoreo infantil y escolar.",
-  "start_url": "/",
+  "name": "EFAS ServiControlPro",
+  "short_name": "ServiControl",
+  "description": "Servidor Web para Control Parental Multi-Usuarios",
+  "start_url": "/dashboard/admin/classrooms",
   "display": "standalone",
-  "background_color": "#F0F4FF",
-  "theme_color": "#1A237E"
+  "background_color": "#0f172a",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/logo-efas192x192.png", 
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-efas.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
